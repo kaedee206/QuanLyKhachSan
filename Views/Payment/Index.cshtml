@@ -1,0 +1,434 @@
+@model PaymentViewModel
+@{
+    ViewData["Title"] = "Thanh toan - Sun Hotel";
+    var booking = Model.Booking;
+    var invoice = Model.Invoice;
+    var nights = booking?.CheckOutDate.DayNumber - (booking?.CheckInDate.DayNumber ?? 0);
+}
+@Html.AntiForgeryToken()
+
+@section Styles {
+<style>
+    .payment-hero {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 50%, #2E8B8B 100%);
+        padding: 2.5rem 0 2rem;
+    }
+    .payment-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    .payment-card-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #0F2540;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .payment-method-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+    }
+    .payment-method-card:hover:not(.disabled) {
+        border-color: #10b981;
+        background: #f0fdf4;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16,185,129,0.15);
+    }
+    .payment-method-card.selected {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .payment-method-card.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .payment-method-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+    }
+    .payment-method-icon.sepay {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    .payment-method-icon.momo {
+        background: #a50064;
+        color: white;
+    }
+    .payment-method-icon.bank {
+        background: #3b82f6;
+        color: white;
+    }
+    .payment-method-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #0F2540;
+    }
+    .payment-method-desc {
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-top: 2px;
+    }
+    .payment-method-badge {
+        position: absolute;
+        top: -8px;
+        right: 12px;
+        background: #10b981;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 10px;
+    }
+    .payment-method-badge.recommended {
+        background: #10b981;
+    }
+    .payment-method-badge.disabled-badge {
+        background: #9ca3af;
+    }
+    .amount-display {
+        background: linear-gradient(135deg, #0F2540, #1A3C5E);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        color: white;
+        text-align: center;
+    }
+    .amount-label {
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .amount-value {
+        font-family: 'Playfair Display', serif;
+        font-size: 2rem;
+        font-weight: 800;
+        color: #D4AF37;
+    }
+    .btn-pay-sepay {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    .btn-pay-sepay:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16,185,129,0.35);
+        color: white;
+    }
+    .notice-box {
+        background: #fff8e1;
+        border-left: 4px solid #ffb300;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f3f0ea;
+        font-size: 0.9rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: #6b7280; }
+    .detail-value { font-weight: 600; color: #0F2540; text-align: right; }
+    .spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    @@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+}
+
+<!-- Hero -->
+<section class="payment-hero">
+    <div class="container">
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.8rem; color: white; margin-bottom: 0.25rem;">
+            <i class="bi bi-credit-card-2-front me-2" style="color: #D4AF37;"></i>Thanh toan
+        </h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Ma booking: <strong style="color: #D4AF37;">@Model.BookingCode</strong></p>
+    </div>
+</section>
+
+<section style="background: #F5F0E8; padding: 2rem 0 4rem;">
+    <div class="container">
+
+        <div class="row">
+            <!-- Left: Payment Methods -->
+            <div class="col-lg-7">
+
+                <!-- Amount Summary -->
+                <div class="payment-card">
+                    <h5 class="payment-card-title"><i class="bi bi-wallet2" style="color: #D4AF37;"></i> So tien can thanh toan</h5>
+                    <div class="amount-display">
+                        <p class="amount-label">Tong cong</p>
+                        <p class="amount-value">@Model.TotalAmount.ToString("N0") VND</p>
+                    </div>
+                </div>
+
+                <!-- Payment Methods -->
+                <div class="payment-card">
+                    <h5 class="payment-card-title"><i class="bi bi-credit-card" style="color: #D4AF37;"></i> Chon phuong thuc thanh toan</h5>
+
+                    <!-- SePay QR -->
+                    <div class="payment-method-card mb-3" id="method-sepay" onclick="selectMethod('sepay')">
+                        <span class="payment-method-badge recommended">Khuyen nghi</span>
+                        <div class="payment-method-icon sepay">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="payment-method-name">Quet ma QR - SePay</div>
+                            <div class="payment-method-desc">Chuyen khoan ngan hang qua QR code. Ho tro 40+ ngan hang Viet Nam.</div>
+                        </div>
+                        <div>
+                            <i class="bi bi-check-circle-fill" id="check-sepay" style="color: #10b981; font-size: 1.4rem; display: none;"></i>
+                        </div>
+                    </div>
+
+                    <!-- MoMo (Disabled) -->
+                    <div class="payment-method-card mb-3 disabled" id="method-momo" title="MoMo chua duoc cau hinh">
+                        <span class="payment-method-badge disabled-badge">Chua ho tro</span>
+                        <div class="payment-method-icon momo">
+                            <i class="bi bi-wallet"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="payment-method-name" style="color: #9ca3af;">MoMo E-Wallet</div>
+                            <div class="payment-method-desc">Thanh toan qua vi MoMo. Chuc nang dang phat trien.</div>
+                        </div>
+                        <div>
+                            <i class="bi bi-lock-fill" style="color: #9ca3af; font-size: 1.1rem;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Cash (at hotel) -->
+                    <div class="payment-method-card mb-3 disabled" title="Thanh toan tai khach san">
+                        <span class="payment-method-badge disabled-badge">Khuyen nghi</span>
+                        <div class="payment-method-icon bank">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="payment-method-name">Thanh toan tai khach san</div>
+                            <div class="payment-method-desc">Thanh toan truc tiep khi check-in.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pay Button -->
+                <button id="btn-pay" class="btn btn-pay-sepay" onclick="initiatePayment()">
+                    <i class="bi bi-qr-code-scan me-2"></i>
+                    <span id="btn-text">Thanh toan bang QR SePay</span>
+                    <span id="btn-spinner" class="spinner ms-2"></span>
+                </button>
+
+                <!-- Notice -->
+                <div class="notice-box mt-3">
+                    <p style="margin: 0; font-size: 0.82rem; color: #795548; line-height: 1.6;">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>Luu y:</strong> Sau khi thanh toan, he thong se tu dong xac nhan trong <strong>1-2 phut</strong>.
+                        Neu sau 5 phut chua nhan duoc email xac nhan, vui long kiem tra lai hoac lien he hotline.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Right: Booking Info -->
+            <div class="col-lg-5">
+                <div class="payment-card">
+                    <h5 class="payment-card-title"><i class="bi bi-calendar-check" style="color: #D4AF37;"></i> Thong tin dat phong</h5>
+                    @if (booking != null)
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">Ma booking</span>
+                            <span class="detail-value" style="color: #D4AF37;">@booking.BookingCode</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Loai phong</span>
+                            <span class="detail-value">@booking.RoomType?.Name</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Ngay nhan phong</span>
+                            <span class="detail-value">@booking.CheckInDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Ngay tra phong</span>
+                            <span class="detail-value">@booking.CheckOutDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">So dem</span>
+                            <span class="detail-value">@nights dem</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">So khach</span>
+                            <span class="detail-value">@booking.NumGuests nguoi</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(booking.GuestName))
+                        {
+                            <div class="detail-row">
+                                <span class="detail-label">Khach hang</span>
+                                <span class="detail-value">@booking.GuestName</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(booking.Email))
+                        {
+                            <div class="detail-row">
+                                <span class="detail-label">Email</span>
+                                <span class="detail-value" style="font-size: 0.8rem;">@booking.Email</span>
+                            </div>
+                        }
+                        <div class="detail-row" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 2px solid #f3f0ea;">
+                            <span style="font-weight: 700; color: #0F2540;">Tong cong</span>
+                            <span style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2rem; color: #D4AF37;">
+                                @Model.TotalAmount.ToString("N0") VND
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Info Box -->
+                <div style="background: #F5F0E8; border-radius: 12px; padding: 1rem 1.25rem; border: 1px solid rgba(212,175,55,0.2);">
+                    <h6 style="font-size: 0.8rem; font-weight: 700; color: #D4AF37; margin-bottom: 0.5rem;">
+                        <i class="bi bi-shield-check me-1"></i> Thong tin
+                    </h6>
+                    <ul style="font-size: 0.8rem; color: #6b7280; margin: 0; padding-left: 1.2rem;">
+                        <li>Check-in: <strong>14:00</strong> | Check-out: <strong>12:00</strong></li>
+                        <li>Mang theo CMND/CCCD</li>
+                        <li>Hotline: <strong>1900 1234</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+    var selectedMethod = 'sepay';
+
+    function selectMethod(method) {
+        if (method === 'momo') return; // MoMo disabled
+        selectedMethod = method;
+
+        // Update UI
+        document.querySelectorAll('.payment-method-card').forEach(function(card) {
+            card.classList.remove('selected');
+        });
+        var selected = document.getElementById('method-' + method);
+        if (selected) selected.classList.add('selected');
+
+        document.querySelectorAll('.bi-check-circle-fill').forEach(function(icon) {
+            icon.style.display = 'none';
+        });
+        var check = document.getElementById('check-' + method);
+        if (check) check.style.display = 'block';
+
+        // Update button
+        var btn = document.getElementById('btn-pay');
+        if (method === 'sepay') {
+            btn.className = 'btn btn-pay-sepay';
+            btn.innerHTML = '<i class="bi bi-qr-code-scan me-2"></i><span id="btn-text">Thanh toan bang QR SePay</span><span id="btn-spinner" class="spinner ms-2"></span>';
+        } else {
+            btn.className = 'btn btn-secondary';
+            btn.innerHTML = '<i class="bi bi-wallet me-2"></i><span>Phuong thuc nay chua ho tro</span>';
+            btn.disabled = true;
+        }
+    }
+
+    function initiatePayment() {
+        var invoiceNumber = '@Model.InvoiceNumber';
+        var btn = document.getElementById('btn-pay');
+        var btnText = document.getElementById('btn-text');
+        var spinner = document.getElementById('btn-spinner');
+
+        // Show loading
+        btn.disabled = true;
+        if (btnText) btnText.textContent = 'Dang khoi tao thanh toan...';
+        if (spinner) spinner.style.display = 'inline-block';
+
+        fetch('@Url.Action("InitializeSePay", "Payment")?invoiceNumber=' + encodeURIComponent(invoiceNumber), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            }
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                // Neu la redirect (401/403) -> chuyen huong ve trang login
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/Auth/Login';
+                    return null;
+                }
+                // Neu la loi khac -> doc text va throw
+                return response.text().then(function(text) {
+                    throw new Error(response.status + ': ' + (text.substring(0, 100) || 'Loi server'));
+                });
+            }
+            var contentType = response.headers.get('content-type') || '';
+            if (contentType.indexOf('application/json') === -1) {
+                throw new Error('Server tra ve HTML thay vi JSON. Co the can dang nhap lai.');
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (!data) return; // Da redirect sang login, bo qua
+            if (data.success && data.checkoutUrl) {
+                // Redirect to SePay checkout page
+                if (data.autoRedirect) {
+                    window.location.href = data.checkoutUrl;
+                } else {
+                    // Show checkout URL for manual redirect
+                    btnText.textContent = 'Dang chuyen huong...';
+                    setTimeout(function() {
+                        window.location.href = data.checkoutUrl;
+                    }, 500);
+                }
+            } else {
+                btn.disabled = false;
+                if (btnText) btnText.textContent = 'Thanh toan bang QR SePay';
+                if (spinner) spinner.style.display = 'none';
+                alert('Loi khoi tao thanh toan: ' + (data.message || 'Khong ro nguyen nhan'));
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            if (btnText) btnText.textContent = 'Thanh toan bang QR SePay';
+            if (spinner) spinner.style.display = 'none';
+            alert('Loi ket noi: ' + err.message);
+        });
+    }
+
+    // Init: select sepay by default
+    selectMethod('sepay');
+</script>
+}

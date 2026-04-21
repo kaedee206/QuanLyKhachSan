@@ -1,0 +1,276 @@
+@model Invoice
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Hóa đơn #" + Model.InvoiceNumber;
+    var b = Model.Booking;
+
+    var payBadge = Model.PaymentStatus switch
+    {
+        PaymentStatus.Unpaid => "bg-danger",
+        PaymentStatus.Pending => "bg-warning text-dark",
+        PaymentStatus.Paid => "bg-success",
+        PaymentStatus.Refunded => "bg-info",
+        PaymentStatus.Cancelled => "bg-dark",
+        _ => "bg-secondary"
+    };
+    var payText = Model.PaymentStatus switch
+    {
+        PaymentStatus.Unpaid => "Chưa thanh toán",
+        PaymentStatus.Pending => "Đang chờ",
+        PaymentStatus.Paid => "Đã thanh toán",
+        PaymentStatus.Refunded => "Đã hoàn tiền",
+        PaymentStatus.Cancelled => "Đã hủy",
+        _ => Model.PaymentStatus.ToString()
+    };
+    var methodText = Model.PaymentMethod switch
+    {
+        PaymentMethod.Cash => "Tiền mặt",
+        PaymentMethod.Transfer => "Chuyển khoản",
+        PaymentMethod.VietQR => "VietQR",
+        PaymentMethod.Card => "Thẻ",
+        _ => Model.PaymentMethod.ToString()
+    };
+
+    // Tinh tong dich vu tu danh sach service thuc te
+    var servicesTotal = b?.Services?.Sum(s => s.TotalAmount) ?? 0;
+    var computedTotal = Model.RoomCharge + servicesTotal - Model.Discount;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-receipt me-2" style="color: #D4AF37;"></i>
+            Hóa đơn #@Model.InvoiceNumber
+        </h4>
+        <small class="text-muted">Tạo lúc @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left"></i> Danh sách
+        </a>
+        <button onclick="window.open('@Url.Action("Print", "Invoice", new { id = Model.InvoiceNumber })','_blank')" class="btn btn-sm" style="background:#D4AF37; color:#1A3C5E; border-radius:8px; font-weight:600;">
+            <i class="bi bi-printer"></i> In hoa don
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- ═══ INVOICE HEADER ═══ -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <h3 style="color: #1A3C5E; font-weight: 700;">HÓA ĐƠN</h3>
+                    <div style="font-size: 1.1rem; color: #D4AF37; font-weight: 600;">@Model.InvoiceNumber</div>
+                </div>
+
+                <!-- Booking & Guest Info -->
+                <div class="row g-3 mb-4 pb-3" style="border-bottom: 1px dashed #dee2e6; font-size: 0.88rem;">
+                    <div class="col-md-6">
+                        <div class="mb-2"><span class="text-muted">Mã booking:</span> <strong>@b?.BookingCode</strong></div>
+                        <div class="mb-2"><span class="text-muted">Khách hàng:</span> <strong>@b?.GuestName</strong></div>
+                        <div class="mb-2"><span class="text-muted">SĐT:</span> @b?.Phone</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2"><span class="text-muted">Phòng:</span> <strong>@(b?.Room?.RoomNumber ?? "—")</strong></div>
+                        <div class="mb-2"><span class="text-muted">Nhận phòng:</span> @b?.CheckInDate.ToString("dd/MM/yyyy")</div>
+                        <div class="mb-2"><span class="text-muted">Trả phòng:</span> @b?.CheckOutDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                </div>
+
+                <!-- ═══ CHARGES BREAKDOWN ═══ -->
+                <table class="table mb-0" style="font-size: 0.88rem;">
+                    <thead>
+                        <tr style="background: #f8f6f0;">
+                            <th class="border-0 py-2">Mục</th>
+                            <th class="border-0 py-2 text-end">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <i class="bi bi-building me-1" style="color: #1A3C5E;"></i> Tiền phòng
+                                <br><small class="text-muted">@b?.RoomType?.Name — @((b?.CheckOutDate.DayNumber - b?.CheckInDate.DayNumber) ?? 0) đêm</small>
+                            </td>
+                            <td class="text-end fw-bold">@Model.RoomCharge.ToString("N0") VNĐ</td>
+                        </tr>
+                        @if (b?.Services != null)
+                        {
+                            @foreach (var s in b.Services)
+                            {
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-concierge-bell me-1" style="color: #2E8B8B;"></i> @s.ServiceName
+                                        <br><small class="text-muted">@s.Quantity x @s.UnitPrice.ToString("N0") VNĐ</small>
+                                    </td>
+                                    <td class="text-end">@s.TotalAmount.ToString("N0") VNĐ</td>
+                                </tr>
+                            }
+                        }
+                        <tr>
+                            <td class="fw-bold">Tổng dịch vụ</td>
+                            <td class="text-end fw-bold" style="color:#2E8B8B;">@servicesTotal.ToString("N0") VNĐ</td>
+                        </tr>
+                        @if (Model.Discount > 0)
+                        {
+                            <tr class="text-danger">
+                                <td><i class="bi bi-tag me-1"></i> Giảm giá</td>
+                                <td class="text-end">-@Model.Discount.ToString("N0") VNĐ</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 2px solid #1A3C5E;">
+                            <td class="fw-bold" style="font-size: 1.1rem; color: #1A3C5E;">TỔNG CỘNG</td>
+                            <td class="text-end fw-bold" style="font-size: 1.3rem; color: #D4AF37;">@computedTotal.ToString("N0") VNĐ</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ PAYMENT SIDEBAR ═══ -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Thanh toán</h6>
+            </div>
+            <div class="card-body px-4" style="font-size: 0.88rem;">
+                <div class="mb-3">
+                    <span class="text-muted">Trạng thái:</span>
+                    <span class="badge @payBadge ms-2">@payText</span>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted">Phương thức:</span>
+                    <span class="fw-bold ms-2">@methodText</span>
+                </div>
+                @if (Model.PaymentDate.HasValue)
+                {
+                    <div class="mb-3">
+                        <span class="text-muted">Ngày thanh toán:</span>
+                        <span class="ms-2">@Model.PaymentDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                }
+
+                <div class="d-grid gap-2 mt-4">
+                    @if (Model.PaymentStatus == PaymentStatus.Unpaid || Model.PaymentStatus == PaymentStatus.Pending)
+                    {
+                        @if (b?.Status == BookingStatus.Cancelled)
+                        {
+                            <div class="alert alert-danger py-2 mb-2 text-center" style="border-radius: 8px; font-size: 0.85rem;">
+                                <i class="bi bi-x-circle me-1"></i> Booking đã bị hủy
+                            </div>
+                            <button type="button" class="btn w-100 mb-2" disabled
+                                    style="background: #6c757d; color: white; border-radius: 8px; font-weight: 600; opacity: 0.6;">
+                                <i class="bi bi-hand-thumbs-up-fill"></i> Đánh dấu đã thanh toán
+                            </button>
+                            <button type="button" class="btn w-100" disabled
+                                    style="background: #28a745; color: white; border-radius: 8px; opacity: 0.6;">
+                                <i class="bi bi-check-circle"></i> Xác nhận thanh toán
+                            </button>
+                            <button type="button" class="btn btn-outline-primary w-100" disabled style="border-radius: 8px; opacity: 0.6;">
+                                <i class="bi bi-qr-code"></i> Tạo mã VietQR
+                            </button>
+                        }
+                        else
+                        {
+                            <form asp-action="ManualMarkPaid" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.InvoiceNumber" />
+                                <button type="submit" class="btn w-100 mb-2"
+                                        style="background: #D4AF37; color: #1A3C5E; border-radius: 8px; font-weight: 600;"
+                                        onclick="return confirm('Đánh dấu hóa đơn này là đã thanh toán thủ công?');">
+                                    <i class="bi bi-hand-thumbs-up-fill"></i> Đánh dấu đã thanh toán
+                                </button>
+                            </form>
+
+                            <button type="button" class="btn w-100" style="background: #28a745; color: white; border-radius: 8px;"
+                                    data-bs-toggle="modal" data-bs-target="#confirmPaymentModal"
+                                    data-invoice-number="@Model.InvoiceNumber"
+                                    data-total-amount="@Model.TotalAmount.ToString("N0")"
+                                    data-payment-method="@methodText">
+                                <i class="bi bi-check-circle"></i> Xác nhận thanh toán
+                            </button>
+
+                            <a asp-action="VietQR" asp-route-id="@Model.InvoiceNumber" class="btn btn-outline-primary w-100" style="border-radius: 8px;">
+                                <i class="bi bi-qr-code"></i> Tạo mã VietQR
+                            </a>
+                        }
+                    }
+
+                    <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b?.Id" class="btn btn-outline-secondary w-100" style="border-radius: 8px;">
+                        <i class="bi bi-calendar-check"></i> Xem booking
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ CONFIRM PAYMENT MODAL ═══ -->
+<div class="modal fade" id="confirmPaymentModal" tabindex="-1" aria-labelledby="confirmPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+            <div class="modal-header border-0 pb-0" style="background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 100%); border-radius: 16px 16px 0 0; padding: 1.5rem 1.5rem 1rem;">
+                <h5 class="modal-title" id="confirmPaymentModalLabel" style="color: white; font-weight: 700; font-family: var(--font-heading);">
+                    <i class="bi bi-shield-check me-2" style="color: #D4AF37;"></i>Xác nhận thanh toán
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <div class="text-center mb-3">
+                    <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #27ae60, #2ecc71); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(39,174,96,0.35);">
+                        <i class="bi bi-check-lg" style="font-size: 2rem; color: white;"></i>
+                    </div>
+                </div>
+                <p class="text-center mb-3" style="color: #5D7A94; font-size: 0.9rem;">
+                    Bạn có chắc chắn muốn xác nhận thanh toán cho hóa đơn này?
+                </p>
+                <div class="bg-light rounded-3 p-3 mb-3" style="border: 1px solid rgba(212,175,55,0.2);">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size: 0.85rem;">Số hóa đơn</span>
+                        <span class="fw-bold" id="modalInvoiceNumber" style="color: #1A3C5E; font-size: 0.9rem;"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size: 0.85rem;">Phương thức</span>
+                        <span class="fw-bold" id="modalPaymentMethod" style="color: #1A3C5E; font-size: 0.9rem;"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted" style="font-size: 0.85rem;">Số tiền</span>
+                        <span class="fw-bold" id="modalTotalAmount" style="color: #D4AF37; font-size: 1rem;"></span>
+                    </div>
+                </div>
+                <p class="text-center mb-0" style="font-size: 0.78rem; color: #95a5a6;">
+                    <i class="bi bi-info-circle me-1"></i>Hành động này sẽ ghi nhận thanh toán và gửi email thông báo cho khách hàng
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light flex-fill me-2" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600; padding: 0.6rem;">
+                    <i class="bi bi-x-lg me-1"></i>Hủy bỏ
+                </button>
+                <form asp-action="ConfirmPayment" method="post" class="flex-fill ms-1" id="confirmPaymentForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.InvoiceNumber" />
+                    <input type="hidden" name="PaymentMethod" id="modalPaymentMethodInput" value="@Model.PaymentMethod.ToString()" />
+                    <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border-radius: 10px; font-weight: 600; padding: 0.6rem; border: none;">
+                        <i class="bi bi-check-circle me-1"></i>Xác nhận
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Đổ dữ liệu vào modal khi được trigger
+        var confirmModal = document.getElementById('confirmPaymentModal');
+        confirmModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('modalInvoiceNumber').textContent = button.getAttribute('data-invoice-number');
+            document.getElementById('modalPaymentMethod').textContent = button.getAttribute('data-payment-method');
+            document.getElementById('modalTotalAmount').textContent = button.getAttribute('data-total-amount') + ' VNĐ';
+        });
+    </script>
+}

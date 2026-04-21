@@ -1,0 +1,195 @@
+@model PaginatedList<Ticket>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý Ticket";
+    var filter = ViewBag.Filter as TicketFilterViewModel ?? new TicketFilterViewModel();
+    var rooms = ViewBag.Rooms as List<Room> ?? new List<Room>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-wrench me-2" style="color: #D4AF37;"></i>
+            Quản lý Ticket
+        </h4>
+        <small class="text-muted">Tổng cộng @Model.TotalCount ticket</small>
+    </div>
+    <a asp-action="Create" class="btn btn-sm" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px;">
+        <i class="bi bi-plus-lg"></i> Tạo ticket
+    </a>
+</div>
+
+<!-- ═══ FILTER BAR ═══ -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body py-3 px-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Trạng thái</label>
+                <select name="Status" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="">Tất cả</option>
+                    <option value="@TicketStatus.Open" selected="@(filter.Status == TicketStatus.Open)">Mở</option>
+                    <option value="@TicketStatus.InProgress" selected="@(filter.Status == TicketStatus.InProgress)">Đang xử lý</option>
+                    <option value="@TicketStatus.Resolved" selected="@(filter.Status == TicketStatus.Resolved)">Đã giải quyết</option>
+                    <option value="@TicketStatus.Closed" selected="@(filter.Status == TicketStatus.Closed)">Đã đóng</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Loại</label>
+                <select name="Type" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="">Tất cả</option>
+                    <option value="@TicketType.Maintenance" selected="@(filter.Type == TicketType.Maintenance)">Bảo trì</option>
+                    <option value="@TicketType.Housekeeping" selected="@(filter.Type == TicketType.Housekeeping)">Dọn phòng</option>
+                    <option value="@TicketType.Service" selected="@(filter.Type == TicketType.Service)">Dịch vụ</option>
+                    <option value="@TicketType.Other" selected="@(filter.Type == TicketType.Other)">Khác</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Ưu tiên</label>
+                <select name="Priority" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="">Tất cả</option>
+                    <option value="@TicketPriority.Low" selected="@(filter.Priority == TicketPriority.Low)">Thấp</option>
+                    <option value="@TicketPriority.Medium" selected="@(filter.Priority == TicketPriority.Medium)">Trung bình</option>
+                    <option value="@TicketPriority.High" selected="@(filter.Priority == TicketPriority.High)">Cao</option>
+                    <option value="@TicketPriority.Urgent" selected="@(filter.Priority == TicketPriority.Urgent)">Khẩn cấp</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Phòng</label>
+                <select name="RoomId" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="">Tất cả</option>
+                    @foreach (var room in rooms)
+                    {
+                        <option value="@room.Id" selected="@(filter.RoomId == room.Id)">@room.RoomNumber</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-sm" style="background: #1A3C5E; color: white; border-radius: 8px;">
+                    <i class="bi bi-search"></i> Lọc
+                </button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+                    <i class="bi bi-x-lg"></i> Xóa lọc
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ TICKETS TABLE ═══ -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Mã ticket</th>
+                        <th class="border-0 py-2">Phòng</th>
+                        <th class="border-0 py-2">Loại</th>
+                        <th class="border-0 py-2">Mô tả</th>
+                        <th class="border-0 py-2">Ưu tiên</th>
+                        <th class="border-0 py-2">Trạng thái</th>
+                        <th class="border-0 py-2">Người báo</th>
+                        <th class="border-0 py-2">Ngày tạo</th>
+                        <th class="border-0 py-2 text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Items)
+                    {
+                        var priorityBadge = t.Priority switch
+                        {
+                            TicketPriority.Low => "bg-secondary",
+                            TicketPriority.Medium => "bg-info text-dark",
+                            TicketPriority.High => "bg-warning text-dark",
+                            TicketPriority.Urgent => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                        var priorityText = t.Priority switch
+                        {
+                            TicketPriority.Low => "Thấp",
+                            TicketPriority.Medium => "TB",
+                            TicketPriority.High => "Cao",
+                            TicketPriority.Urgent => "Khẩn",
+                            _ => t.Priority.ToString()
+                        };
+                        var statusBadge = t.Status switch
+                        {
+                            TicketStatus.Open => "bg-danger",
+                            TicketStatus.InProgress => "bg-warning text-dark",
+                            TicketStatus.Resolved => "bg-success",
+                            TicketStatus.Closed => "bg-secondary",
+                            _ => "bg-secondary"
+                        };
+                        var statusText = t.Status switch
+                        {
+                            TicketStatus.Open => "Mở",
+                            TicketStatus.InProgress => "Đang xử lý",
+                            TicketStatus.Resolved => "Đã giải quyết",
+                            TicketStatus.Closed => "Đã đóng",
+                            _ => t.Status.ToString()
+                        };
+                        var typeText = t.Type switch
+                        {
+                            TicketType.Maintenance => "Bảo trì",
+                            TicketType.Housekeeping => "Dọn phòng",
+                            TicketType.Service => "Dịch vụ",
+                            TicketType.Other => "Khác",
+                            _ => t.Type.ToString()
+                        };
+                        <tr>
+                            <td class="px-4">
+                                <a asp-action="Detail" asp-route-id="@t.Id" style="color: #1A3C5E; font-weight: 600; text-decoration: none;">@t.TicketNumber</a>
+                            </td>
+                            <td><span class="badge bg-light text-dark">@t.Room?.RoomNumber</span></td>
+                            <td>@typeText</td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@t.Description</td>
+                            <td><span class="badge @priorityBadge" style="font-size: 0.72rem;">@priorityText</span></td>
+                            <td><span class="badge @statusBadge" style="font-size: 0.72rem;">@statusText</span></td>
+                            <td>@t.Reporter?.FullName</td>
+                            <td>@t.CreatedAt.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Detail" asp-route-id="@t.Id" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; border-radius: 6px;" title="Chi tiết">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <div class="mt-2">Không tìm thấy ticket nào</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAGINATION ═══ -->
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3 d-flex justify-content-center">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Status="@filter.Status" asp-route-Type="@filter.Type" asp-route-Priority="@filter.Priority" asp-route-RoomId="@filter.RoomId" asp-route-Page="@(Model.Page - 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-Status="@filter.Status" asp-route-Type="@filter.Type" asp-route-Priority="@filter.Priority" asp-route-RoomId="@filter.RoomId" asp-route-Page="@i" style="border-radius: 6px; margin: 0 2px; @(i == Model.Page ? "background: #1A3C5E; border-color: #1A3C5E;" : "")">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Status="@filter.Status" asp-route-Type="@filter.Type" asp-route-Priority="@filter.Priority" asp-route-RoomId="@filter.RoomId" asp-route-Page="@(Model.Page + 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

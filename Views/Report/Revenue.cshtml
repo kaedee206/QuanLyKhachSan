@@ -1,0 +1,182 @@
+@model RevenueReportViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Báo cáo Doanh thu";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-graph-up me-2" style="color: #D4AF37;"></i>
+            Báo cáo Doanh thu
+        </h4>
+        <small class="text-muted">@Model.Filter.StartDate.ToString("dd/MM/yyyy") — @Model.Filter.EndDate.ToString("dd/MM/yyyy")</small>
+    </div>
+</div>
+
+<!-- ═══ DATE FILTER ═══ -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body py-3 px-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Từ ngày</label>
+                <input type="date" name="StartDate" value="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="border-radius: 8px;" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Đến ngày</label>
+                <input type="date" name="EndDate" value="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="border-radius: 8px;" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Nhóm theo</label>
+                <select name="GroupBy" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="day" selected="@(Model.Filter.GroupBy == "day")">Ngày</option>
+                    <option value="week" selected="@(Model.Filter.GroupBy == "week")">Tuần</option>
+                    <option value="month" selected="@(Model.Filter.GroupBy == "month")">Tháng</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-sm" style="background: #1A3C5E; color: white; border-radius: 8px;">
+                    <i class="bi bi-search"></i> Xem báo cáo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ SUMMARY CARDS ═══ -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #D4AF37;">
+            <div class="card-body">
+                <div class="text-muted" style="font-size: 0.78rem;">Tổng doanh thu</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #D4AF37;">@Model.TotalRevenue.ToString("N0") VNĐ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #1A3C5E;">
+            <div class="card-body">
+                <div class="text-muted" style="font-size: 0.78rem;">Doanh thu phòng</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #1A3C5E;">@Model.RoomRevenue.ToString("N0") VNĐ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #2E8B8B;">
+            <div class="card-body">
+                <div class="text-muted" style="font-size: 0.78rem;">Doanh thu dịch vụ</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #2E8B8B;">@Model.ServiceRevenue.ToString("N0") VNĐ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #6c757d;">
+            <div class="card-body">
+                <div class="text-muted" style="font-size: 0.78rem;">Tổng hóa đơn</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #6c757d;">@Model.TotalInvoices</div>
+                <div class="text-muted" style="font-size: 0.72rem;">TB: @Model.AvgInvoice.ToString("N0") VNĐ/hóa đơn</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ BREAKDOWN TABLE ═══ -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-header bg-white border-0 pt-3 px-4" style="border-radius: 12px 12px 0 0;">
+        <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Chi tiết doanh thu</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Kỳ</th>
+                        <th class="border-0 py-2 text-center">Số hóa đơn</th>
+                        <th class="border-0 py-2 text-end">Tiền phòng</th>
+                        <th class="border-0 py-2 text-end">Tiền dịch vụ</th>
+                        <th class="border-0 py-2 text-end">Tổng doanh thu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Breakdown)
+                    {
+                        <tr>
+                            <td class="px-4 fw-bold" style="color: #1A3C5E;">@row.Period</td>
+                            <td class="text-center">@row.InvoiceCount</td>
+                            <td class="text-end">@row.RoomRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end">@row.ServiceRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end fw-bold" style="color: #D4AF37;">@row.Revenue.ToString("N0") VNĐ</td>
+                        </tr>
+                    }
+                    @if (!Model.Breakdown.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Không có dữ liệu trong khoảng thời gian này</td>
+                        </tr>
+                    }
+                </tbody>
+                @if (Model.Breakdown.Any())
+                {
+                    <tfoot style="border-top: 2px solid #1A3C5E;">
+                        <tr>
+                            <td class="px-4 fw-bold" style="color: #1A3C5E;">TỔNG CỘNG</td>
+                            <td class="text-center fw-bold">@Model.TotalInvoices</td>
+                            <td class="text-end fw-bold">@Model.RoomRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end fw-bold">@Model.ServiceRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end fw-bold" style="color: #D4AF37; font-size: 1rem;">@Model.TotalRevenue.ToString("N0") VNĐ</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAYMENT METHODS TABLE ═══ -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-header bg-white border-0 pt-3 px-4" style="border-radius: 12px 12px 0 0;">
+        <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Phương thức thanh toán</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Phương thức</th>
+                        <th class="border-0 py-2 text-center">Số lượng</th>
+                        <th class="border-0 py-2 text-end">Tổng tiền</th>
+                        <th class="border-0 py-2 text-end pe-4">Tỷ lệ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pm in Model.PaymentMethods)
+                    {
+                        var percentage = Model.TotalRevenue > 0 ? (pm.Total / Model.TotalRevenue * 100) : 0;
+                        <tr>
+                            <td class="px-4">
+                                <i class="bi @(pm.Method == "Cash" ? "bi-cash-stack" : pm.Method == "Transfer" ? "bi-bank" : pm.Method == "VietQR" ? "bi-qr-code" : "bi-credit-card") me-2" style="color: #D4AF37;"></i>
+                                @(pm.Method switch { "Cash" => "Tiền mặt", "Transfer" => "Chuyển khoản", "VietQR" => "VietQR", "Card" => "Thẻ", _ => pm.Method })
+                            </td>
+                            <td class="text-center">@pm.Count</td>
+                            <td class="text-end fw-bold">@pm.Total.ToString("N0") VNĐ</td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <div class="progress" style="width: 80px; height: 6px;">
+                                        <div class="progress-bar" style="width: @percentage.ToString("N1")%; background: #D4AF37;"></div>
+                                    </div>
+                                    <span style="min-width: 45px;">@percentage.ToString("N1")%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.PaymentMethods.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">Không có dữ liệu</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Không có quyền truy cập";
+}
+
+<section style="min-height: 60vh; display: flex; align-items: center; justify-content: center;">
+    <div class="text-center">
+        <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(220,53,69,0.1), rgba(220,53,69,0.05)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="bi bi-shield-x" style="font-size: 2.2rem; color: #dc3545;"></i>
+        </div>
+        <h2 style="font-family: 'Playfair Display', serif; font-weight: 700; color: #0F2540; font-size: 1.8rem; margin-bottom: 0.5rem;">
+            403
+        </h2>
+        <h4 style="font-weight: 600; color: #0F2540; margin-bottom: 0.75rem;">
+            Không có quyền truy cập
+        </h4>
+        <p style="color: #6b7280; max-width: 400px; margin: 0 auto 2rem; font-size: 0.95rem;">
+            Bạn không có quyền truy cập vào trang này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a asp-controller="Admin" asp-action="Index" class="btn" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 10px; padding: 10px 24px;">
+                <i class="bi bi-speedometer2 me-1"></i> Về Dashboard
+            </a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 10px; padding: 10px 24px;">
+                <i class="bi bi-house me-1"></i> Trang chủ
+            </a>
+        </div>
+    </div>
+</section>

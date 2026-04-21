@@ -1,0 +1,180 @@
+@model DashboardViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Dashboard</h4>
+        <small class="text-muted">Tổng quan hệ thống - @DateTime.Now.ToString("dd/MM/yyyy")</small>
+    </div>
+    <a asp-controller="Booking" asp-action="AdminCreate" class="btn btn-sm" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600;">
+        <i class="bi bi-plus-lg"></i> Đặt phòng mới
+    </a>
+</div>
+
+<!-- ═══ STATS CARDS ═══ -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(212,175,55,0.15); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-calendar-check" style="font-size: 1.4rem; color: #D4AF37;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.78rem;">Booking hôm nay</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #1A3C5E;">@Model.TodayNewBookings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(26,60,94,0.12); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-cash-stack" style="font-size: 1.4rem; color: #1A3C5E;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.78rem;">Doanh thu hôm nay</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #1A3C5E;">@Model.TodayRevenue.ToString("N0") VNĐ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(46,139,139,0.15); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-building" style="font-size: 1.4rem; color: #2E8B8B;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.78rem;">Tỷ lệ lấp đầy</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #2E8B8B;">@Model.OccupancyRate.ToString("N1")%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-wrench" style="font-size: 1.4rem; color: #dc3545;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.78rem;">Ticket chờ xử lý</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;">@Model.PendingTickets</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ROOM STATUS GRID ═══ -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-header bg-white border-0 pt-3 pb-2 px-4" style="border-radius: 12px 12px 0 0;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Sơ đồ phòng</h6>
+            <div class="d-flex gap-3" style="font-size: 0.75rem;">
+                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #28a745;"></span> Trống (@Model.RoomStats.Available)</span>
+                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #dc3545;"></span> Có khách (@Model.RoomStats.Occupied)</span>
+                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #ffc107;"></span> Đang dọn (@Model.RoomStats.Cleaning)</span>
+                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #6c757d;"></span> Bảo trì (@Model.RoomStats.Maintenance)</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body px-4">
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var room in Model.RoomGrid)
+            {
+                var bgColor = room.Status switch
+                {
+                    RoomStatus.Available => "#28a745",
+                    RoomStatus.Occupied => "#dc3545",
+                    RoomStatus.Cleaning => "#ffc107",
+                    RoomStatus.Maintenance => "#6c757d",
+                    _ => "#adb5bd"
+                };
+                var textColor = room.Status == RoomStatus.Cleaning ? "#1A3C5E" : "white";
+                <a asp-controller="Room" asp-action="Index" class="text-decoration-none"
+                   style="width: 58px; height: 58px; border-radius: 8px; background: @bgColor; color: @textColor; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 600; transition: transform 0.15s;"
+                   title="@room.RoomNumber - @room.RoomTypeName@(room.GuestName != null ? " | " + room.GuestName : "")">
+                    <span style="font-size: 0.85rem;">@room.RoomNumber</span>
+                    @if (room.GuestName != null)
+                    {
+                        <span style="font-size: 0.6rem; opacity: 0.85;">@room.GuestName.Split(' ').Last()</span>
+                    }
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ═══ RECENT BOOKINGS ═══ -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-header bg-white border-0 pt-3 pb-2 px-4" style="border-radius: 12px 12px 0 0;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Booking gần đây</h6>
+            <a asp-controller="Booking" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="font-size: 0.78rem;">Xem tất cả</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Mã</th>
+                        <th class="border-0 py-2">Khách</th>
+                        <th class="border-0 py-2">Phòng</th>
+                        <th class="border-0 py-2">Nhận phòng</th>
+                        <th class="border-0 py-2">Trả phòng</th>
+                        <th class="border-0 py-2">Trạng thái</th>
+                        <th class="border-0 py-2">Tổng tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.RecentBookings)
+                    {
+                        var badgeClass = b.Status switch
+                        {
+                            BookingStatus.Pending => "bg-warning text-dark",
+                            BookingStatus.Confirmed => "bg-info text-dark",
+                            BookingStatus.CheckedIn => "bg-success",
+                            BookingStatus.CheckedOut => "bg-secondary",
+                            BookingStatus.Cancelled => "bg-danger",
+                            BookingStatus.NoShow => "bg-dark",
+                            _ => "bg-secondary"
+                        };
+                        var statusText = b.Status switch
+                        {
+                            BookingStatus.Pending => "Chờ xác nhận",
+                            BookingStatus.Confirmed => "Đã xác nhận",
+                            BookingStatus.CheckedIn => "Đã nhận phòng",
+                            BookingStatus.CheckedOut => "Đã trả phòng",
+                            BookingStatus.Cancelled => "Đã hủy",
+                            BookingStatus.NoShow => "Không đến",
+                            _ => b.Status.ToString()
+                        };
+                        <tr>
+                            <td class="px-4">
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" style="color: #1A3C5E; font-weight: 600;">@b.BookingCode</a>
+                            </td>
+                            <td>@b.GuestName</td>
+                            <td>@(b.Room?.RoomNumber ?? "Chưa xếp")</td>
+                            <td>@b.CheckInDate.ToString("dd/MM/yyyy")</td>
+                            <td>@b.CheckOutDate.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @badgeClass" style="font-size: 0.72rem;">@statusText</span></td>
+                            <td style="font-weight: 600;">@b.TotalAmount.ToString("N0") VNĐ</td>
+                        </tr>
+                    }
+                    @if (!Model.RecentBookings.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Chưa có booking nào</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

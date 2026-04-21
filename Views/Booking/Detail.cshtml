@@ -1,0 +1,303 @@
+@model BookingDetailViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Chi tiết Booking #" + Model.Booking.BookingCode;
+    var b = Model.Booking;
+
+    var badgeClass = b.Status switch
+    {
+        BookingStatus.Pending => "bg-warning text-dark",
+        BookingStatus.Confirmed => "bg-info text-dark",
+        BookingStatus.CheckedIn => "bg-success",
+        BookingStatus.CheckedOut => "bg-secondary",
+        BookingStatus.Cancelled => "bg-danger",
+        BookingStatus.NoShow => "bg-dark",
+        _ => "bg-secondary"
+    };
+    var statusText = b.Status switch
+    {
+        BookingStatus.Pending => "Chờ xác nhận",
+        BookingStatus.Confirmed => "Đã xác nhận",
+        BookingStatus.CheckedIn => "Đã nhận phòng",
+        BookingStatus.CheckedOut => "Đã trả phòng",
+        BookingStatus.Cancelled => "Đã hủy",
+        BookingStatus.NoShow => "Không đến",
+        _ => b.Status.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-calendar-check me-2" style="color: #D4AF37;"></i>
+            Booking #@b.BookingCode
+        </h4>
+        <small class="text-muted">Tạo lúc @b.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left"></i> Danh sách
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ═══ BOOKING INFO ═══ -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Thông tin đặt phòng</h6>
+                <span class="badge @badgeClass" style="font-size: 0.8rem;">@statusText</span>
+            </div>
+            <div class="card-body px-4">
+                <div class="row g-3" style="font-size: 0.88rem;">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span class="text-muted">Khách hàng:</span>
+                            <div class="fw-bold" style="color: #1A3C5E;">@b.GuestName</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Số điện thoại:</span>
+                            <div>@b.Phone</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Email:</span>
+                            <div>@(b.Email ?? "—")</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">CMND/CCCD:</span>
+                            <div>@(b.IdNumber ?? "—")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span class="text-muted">Loại phòng:</span>
+                            <div class="fw-bold">@b.RoomType?.Name</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Phòng:</span>
+                            <div>@(b.Room?.RoomNumber ?? "<em>Chưa xếp phòng</em>")</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Nhận phòng:</span>
+                            <div>@b.CheckInDate.ToString("dd/MM/yyyy")@(b.ActualCheckIn.HasValue ? " — Thực tế: " + b.ActualCheckIn.Value.ToString("dd/MM/yyyy HH:mm") : "")</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Trả phòng:</span>
+                            <div>@b.CheckOutDate.ToString("dd/MM/yyyy")@(b.ActualCheckOut.HasValue ? " — Thực tế: " + b.ActualCheckOut.Value.ToString("dd/MM/yyyy HH:mm") : "")</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Số khách:</span>
+                            <div>@b.NumGuests</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Tong tien phong:</span>
+                            <div style="color: #888; font-size: 0.85rem;">@b.TotalAmount.ToString("N0") VNĐ</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Tong tien dich vu:</span>
+                            <div style="color: #2E8B8B; font-size: 0.85rem;">@Model.Services.Sum(s => s.TotalAmount).ToString("N0") VNĐ</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Tong cong thanh toan:</span>
+                            <div class="fw-bold" style="color: #D4AF37; font-size: 1.1rem;">@((b.TotalAmount + Model.Services.Sum(s => s.TotalAmount)).ToString("N0")) VNĐ</div>
+                        </div>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(b.Notes))
+                {
+                    <div class="mt-2 p-3" style="background: #f8f6f0; border-radius: 8px;">
+                        <small class="text-muted d-block mb-1">Ghi chú:</small>
+                        @b.Notes
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ═══ ROOM ASSIGNMENT (Pending only) ═══ -->
+        @if (b.Status == BookingStatus.Pending && Model.AvailableRooms.Any())
+        {
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border-left: 4px solid #D4AF37 !important;">
+                <div class="card-body px-4">
+                    <h6 class="mb-3" style="color: #1A3C5E; font-weight: 700;">
+                        <i class="bi bi-door-open me-2" style="color: #D4AF37;"></i>Xếp phòng & Xác nhận
+                    </h6>
+                    <form asp-action="Confirm" asp-route-code="@b.BookingCode" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label" style="font-size: 0.8rem;">Chọn phòng trống</label>
+                                <select name="RoomId" class="form-select form-select-sm" style="border-radius: 8px;" required>
+                                    <option value="">-- Chọn phòng --</option>
+                                    @foreach (var room in Model.AvailableRooms)
+                                    {
+                                        <option value="@room.Id">@room.RoomNumber — @room.RoomType?.Name (@room.RoomType?.BasePrice.ToString("N0") VNĐ/đêm)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-sm w-100" style="background: #2E8B8B; color: white; border-radius: 8px;">
+                                    <i class="bi bi-check-lg"></i> Xác nhận booking
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- ═══ SERVICES ═══ -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Dịch vụ sử dụng</h6>
+                @if (b.Status == BookingStatus.CheckedIn)
+                {
+                    <a asp-controller="Service" asp-action="Create" asp-route-bookingCode="@b.BookingCode" class="btn btn-sm" style="background: #D4AF37; color: #1A3C5E; border-radius: 8px; font-size: 0.78rem;">
+                        <i class="bi bi-plus-lg"></i> Thêm dịch vụ
+                    </a>
+                }
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                        <thead style="background: #f8f6f0;">
+                            <tr>
+                                <th class="border-0 px-4 py-2">Tên dịch vụ</th>
+                                <th class="border-0 py-2">Loại</th>
+                                <th class="border-0 py-2">SL</th>
+                                <th class="border-0 py-2">Đơn giá</th>
+                                <th class="border-0 py-2">Thành tiền</th>
+                                <th class="border-0 py-2">Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.Services)
+                            {
+                                <tr>
+                                    <td class="px-4">@s.ServiceName</td>
+                                    <td>@s.ServiceType</td>
+                                    <td>@s.Quantity</td>
+                                    <td>@s.UnitPrice.ToString("N0") VNĐ</td>
+                                    <td class="fw-bold">@s.TotalAmount.ToString("N0") VNĐ</td>
+                                    <td>@s.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                            }
+                            @if (!Model.Services.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">Chưa có dịch vụ nào</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ INVOICE ═══ -->
+        @if (Model.Invoice != null)
+        {
+            var inv = Model.Invoice;
+            var payBadge = inv.PaymentStatus switch
+            {
+                PaymentStatus.Unpaid => "bg-danger",
+                PaymentStatus.Pending => "bg-warning text-dark",
+                PaymentStatus.Paid => "bg-success",
+                PaymentStatus.Refunded => "bg-info",
+                _ => "bg-secondary"
+            };
+            var payText = inv.PaymentStatus switch
+            {
+                PaymentStatus.Unpaid => "Chưa thanh toán",
+                PaymentStatus.Pending => "Đang chờ",
+                PaymentStatus.Paid => "Đã thanh toán",
+                PaymentStatus.Refunded => "Đã hoàn",
+                _ => inv.PaymentStatus.ToString()
+            };
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                    <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Hóa đơn #@inv.InvoiceNumber</h6>
+                    <span class="badge @payBadge">@payText</span>
+                </div>
+                <div class="card-body px-4" style="font-size: 0.88rem;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2"><span class="text-muted">Tiền phòng:</span> <strong>@inv.RoomCharge.ToString("N0") VNĐ</strong></div>
+                            <div class="mb-2"><span class="text-muted">Tiền dịch vụ:</span> <strong>@inv.ServiceCharge.ToString("N0") VNĐ</strong></div>
+                            <div class="mb-2"><span class="text-muted">Giảm giá:</span> <strong>@inv.Discount.ToString("N0") VNĐ</strong></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2"><span class="text-muted">Tổng cộng:</span> <strong style="color: #D4AF37; font-size: 1.2rem;">@inv.TotalAmount.ToString("N0") VNĐ</strong></div>
+                            <div class="mb-2"><span class="text-muted">Thanh toán:</span> @inv.PaymentMethod</div>
+                            <div class="mb-2"><span class="text-muted">Ngày tạo:</span> @inv.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <a asp-controller="Invoice" asp-action="Detail" asp-route-id="@inv.InvoiceNumber" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                            <i class="bi bi-eye"></i> Xem hóa đơn
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ═══ ACTION SIDEBAR ═══ -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Thao tác</h6>
+            </div>
+            <div class="card-body px-4">
+                <div class="d-grid gap-2">
+                    @if (b.Status == BookingStatus.Confirmed)
+                    {
+                        <form asp-action="CheckIn" asp-route-code="@b.BookingCode" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn w-100" style="background: #28a745; color: white; border-radius: 8px;">
+                                <i class="bi bi-box-arrow-in-right"></i> Nhận phòng (Check-in)
+                            </button>
+                        </form>
+                    }
+
+                    @if (b.Status == BookingStatus.CheckedIn)
+                    {
+                        <a asp-action="CheckOut" asp-route-code="@b.BookingCode" class="btn w-100" style="background: #1A3C5E; color: white; border-radius: 8px;">
+                            <i class="bi bi-box-arrow-right"></i> Trả phòng (Check-out)
+                        </a>
+                        <a asp-controller="Service" asp-action="Create" asp-route-bookingCode="@b.BookingCode" class="btn btn-outline-primary w-100" style="border-radius: 8px;">
+                            <i class="bi bi-concierge-bell"></i> Thêm dịch vụ
+                        </a>
+                    }
+
+                    @if (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed)
+                    {
+                        <form asp-action="Cancel" asp-route-code="@b.BookingCode" method="post" onsubmit="return confirm('Bạn có chắc muốn hủy booking này?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger w-100" style="border-radius: 8px;">
+                                <i class="bi bi-x-circle"></i> Hủy booking
+                            </button>
+                        </form>
+                    }
+
+                    @if (b.Status == BookingStatus.Confirmed)
+                    {
+                        <form asp-action="NoShow" asp-route-code="@b.BookingCode" method="post" onsubmit="return confirm('Xác nhận khách không đến?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-dark w-100" style="border-radius: 8px;">
+                                <i class="bi bi-person-x"></i> Không đến (No-show)
+                            </button>
+                        </form>
+                    }
+
+                    @if (Model.Invoice != null)
+                    {
+                        <a asp-controller="Invoice" asp-action="Detail" asp-route-id="@Model.Invoice.InvoiceNumber" class="btn btn-outline-secondary w-100" style="border-radius: 8px;">
+                            <i class="bi bi-receipt"></i> Xem hóa đơn
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

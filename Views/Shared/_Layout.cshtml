@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sun Hotel</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @if (ViewData["Layout"] as string != "Admin")
+    {
+        <!-- ═══ CUSTOMER HEADER ═══ -->
+        <nav class="navbar navbar-expand-lg" style="background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 100%); padding: 0.75rem 0;">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index"
+                   style="color: white; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.4rem;">
+                    <span style="background: linear-gradient(135deg, #D4AF37, #F0D060); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="bi bi-sun"></i>
+                    </span>
+                    Sun Hotel
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border-color: rgba(255,255,255,0.3);">
+                    <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index" style="color: rgba(255,255,255,0.85);">
+                                <i class="bi bi-house me-1"></i> Trang ch&#7911;
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Room" asp-action="Listing" style="color: rgba(255,255,255,0.85);">
+                                <i class="bi bi-grid me-1"></i> Ph&#242;ng
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Booking" asp-action="Create" style="color: rgba(255,255,255,0.85);">
+                                <i class="bi bi-calendar-plus me-1"></i> &#272;&#7863;t ph&#242;ng
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Booking" asp-action="Lookup" style="color: rgba(255,255,255,0.85);">
+                                <i class="bi bi-search me-1"></i> Tra c&#7913;u
+                            </a>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a class="btn btn-sm" asp-controller="Admin" asp-action="Index"
+                                   style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px; padding: 6px 16px;">
+                                    <i class="bi bi-speedometer2 me-1"></i> Qu&#7843;n l&#253;
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="btn btn-sm" asp-controller="Auth" asp-action="Login"
+                                   style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px; padding: 6px 16px;">
+                                    <i class="bi bi-person-badge me-1"></i> Bạn là Nhân Viên Khách Sạn, Đăng Nhập Tại Đây
+                                </a>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    }
+
+    <!-- ═══ TOAST NOTIFICATIONS ═══ -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    @if (ViewData["Layout"] as string != "Admin")
+    {
+        <!-- ═══ CUSTOMER FOOTER ═══ -->
+        <footer style="background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 100%); padding: 3rem 0 1.5rem; color: rgba(255,255,255,0.7);">
+            <div class="container">
+                <div class="row g-4 align-items-start">
+                    <div class="col-lg-4">
+                        <h5 style="font-family: 'Playfair Display', serif; color: white; font-weight: 700;">
+                            <i class="bi bi-sun" style="color: #D4AF37;"></i> Sun Hotel
+                        </h5>
+                        <p style="font-size: 0.85rem;">Kh&#225;ch s&#7841;n 4 sao &#273;&#7859;ng c&#7845;p t&#7841;i trung t&#226;m th&#224;nh ph&#7889;. Tr&#7843;i nghi&#7879;m d&#7883;ch v&#7909; ho&#224;n h&#7843;o.</p>
+                        <img src="/images/hotel-assets/about/lobby.png" alt="Sun Hotel Lobby" style="width:100%; max-width:280px; border-radius:10px; margin-top:8px; opacity:0.85;" />
+                    </div>
+                    <div class="col-lg-4">
+                        <h6 style="color: #D4AF37; font-weight: 600;">Li&#234;n h&#7879;</h6>
+                        <p style="font-size: 0.85rem; margin: 0;"><i class="bi bi-geo-alt me-1"></i> 123 Ph&#7889; ABC, Th&#225;i Nguy&#234;n</p>
+                        <p style="font-size: 0.85rem; margin: 0;"><i class="bi bi-telephone me-1"></i> 0123 456 789</p>
+                        <p style="font-size: 0.85rem; margin: 0;"><i class="bi bi-envelope me-1"></i> info@sunhotel.vn</p>
+                    </div>
+                    <div class="col-lg-4">
+                        <h6 style="color: #D4AF37; font-weight: 600;">Liên k&#7871;t nhanh</h6>
+                        <a asp-controller="Room" asp-action="Listing" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">Xem ph&#242;ng</a>
+                        <a asp-controller="Booking" asp-action="Create" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">&#272;&#7863;t ph&#242;ng</a>
+                        <a asp-controller="Booking" asp-action="Lookup" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">Tra c&#7913;u booking</a>
+                    </div>
+                </div>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 2rem 0 1rem;" />
+                <p class="text-center mb-0" style="font-size: 0.8rem;">&copy; 2026 Sun Hotel - Nh&#243;m 29, &#272;H CNTT&TT Th&#225;i Nguy&#234;n</p>
+            </div>
+        </footer>
+    }
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

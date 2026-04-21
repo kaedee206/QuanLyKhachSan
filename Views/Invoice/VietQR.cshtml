@@ -1,0 +1,73 @@
+@model VietQRViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Thanh toán VietQR";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-qr-code me-2" style="color: #D4AF37;"></i>
+            Thanh toán VietQR
+        </h4>
+        <small class="text-muted">Hóa đơn #@Model.InvoiceNumber</small>
+    </div>
+    <a asp-action="Detail" asp-route-id="@Model.InvoiceNumber" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+        <i class="bi bi-arrow-left"></i> Quay lại hóa đơn
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-4 text-center">
+                <!-- QR Code Image -->
+                <div class="mb-4 p-3" style="background: white; border-radius: 12px; display: inline-block; border: 2px solid #f0ece0;">
+                    <img src="@Model.QrImageUrl" alt="VietQR Code" style="max-width: 280px; width: 100%;" />
+                </div>
+
+                <!-- Bank Info -->
+                <div class="text-start p-3 mb-3" style="background: #f8f6f0; border-radius: 10px; font-size: 0.88rem;">
+                    <div class="mb-2">
+                        <span class="text-muted">Ngân hàng:</span>
+                        <strong class="ms-2" style="color: #1A3C5E;">@Model.BankName</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Số tài khoản:</span>
+                        <strong class="ms-2" style="color: #1A3C5E;">@Model.AccountNo</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Chủ tài khoản:</span>
+                        <strong class="ms-2" style="color: #1A3C5E;">@Model.AccountName</strong>
+                    </div>
+                </div>
+
+                <!-- Amount & Content -->
+                <div class="p-3 mb-4" style="background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(26,60,94,0.05)); border-radius: 10px;">
+                    <div class="mb-2" style="font-size: 0.85rem;">
+                        <span class="text-muted">Số tiền:</span>
+                    </div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #D4AF37;">
+                        @Model.Amount.ToString("N0") VNĐ
+                    </div>
+                    <div class="mt-2" style="font-size: 0.85rem;">
+                        <span class="text-muted">Nội dung CK:</span>
+                        <div class="fw-bold mt-1" style="color: #1A3C5E; font-size: 1rem;">@Model.Content</div>
+                    </div>
+                </div>
+
+                <!-- Confirm Button -->
+                <form asp-controller="Invoice" asp-action="ConfirmVietQR" asp-route-id="@Model.InvoiceNumber" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 10px; padding: 12px; font-size: 1rem; font-weight: 600;" onclick="return confirm('Xác nhận khách đã thanh toán qua VietQR?');">
+                        <i class="bi bi-check-circle me-2"></i>Xác nhận đã thanh toán
+                    </button>
+                </form>
+
+                <div class="mt-3" style="font-size: 0.78rem; color: #6c757d;">
+                    <i class="bi bi-info-circle"></i> Quét mã QR bằng ứng dụng ngân hàng để thanh toán
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

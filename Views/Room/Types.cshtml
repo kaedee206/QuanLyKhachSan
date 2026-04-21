@@ -1,0 +1,256 @@
+@model List<RoomType>
+@{
+    ViewData["Title"] = "Loại phòng - Sun Hotel";
+}
+
+@{
+    // Helper to parse amenities JSON string into a list
+    List<string> GetAmenityList(string? amenities)
+    {
+        if (string.IsNullOrEmpty(amenities)) return new List<string>();
+        try { return System.Text.Json.JsonSerializer.Deserialize<List<string>>(amenities) ?? new List<string>(); }
+        catch { return amenities.Split(',').Select(s => s.Trim()).ToList(); }
+    }
+
+    var amenitiesIcons = new Dictionary<string, string>
+    {
+        { "wifi", "bi-wifi" },
+        { "pool", "bi-water" },
+        { "ac", "bi-snow" },
+        { "parking", "bi-car-front" },
+        { "gym", "bi-heart-pulse" },
+        { "spa", "bi-droplet-half" },
+        { "restaurant", "bi-cup-hot" },
+        { "tv", "bi-tv" },
+        { "minibar", "bi-cup-straw" },
+        { "balcony", "bi-brightness-high" },
+        { "ocean view", "bi-water" },
+        { "city view", "bi-buildings" }
+    };
+
+    string GetAmenityIcon(string amenity)
+    {
+        var key = amenitiesIcons.Keys.FirstOrDefault(k => amenity.Contains(k, StringComparison.OrdinalIgnoreCase)) ?? "star";
+        return amenitiesIcons.GetValueOrDefault(key, "bi-star");
+    }
+}
+
+<style>
+    .types-hero {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 50%, #2E8B8B 100%);
+        padding: 3rem 0 4rem;
+        margin-bottom: -2rem;
+    }
+    .types-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 2rem;
+        color: white;
+    }
+    .type-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .type-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+    }
+    .type-card-img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #1A3C5E, #2E8B8B);
+        display: block;
+    }
+    .type-card-img-placeholder {
+        width: 100%;
+        height: 220px;
+        background: linear-gradient(135deg, #1A3C5E, #2E8B8B);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .type-card-body {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .type-card-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #0F2540;
+        margin-bottom: 0.3rem;
+    }
+    .type-card-price {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #D4AF37;
+        margin-bottom: 0.8rem;
+    }
+    .type-card-price small {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: #6b7280;
+        font-family: 'Inter', sans-serif;
+    }
+    .type-card-desc {
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        flex: 1;
+    }
+    .amenity-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(212,175,55,0.1);
+        color: #D4AF37;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        margin-bottom: 2px;
+        margin-right: 2px;
+    }
+    .amenity-tag i {
+        font-size: 0.8rem;
+    }
+    .type-card-meta {
+        display: flex;
+        gap: 14px;
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid #f0ebe3;
+    }
+    .btn-book {
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        color: #1A3C5E;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    .btn-book:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(212,175,55,0.3);
+        color: #1A3C5E;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #D4AF37;
+        margin-bottom: 0.4rem;
+    }
+</style>
+
+<!-- HERO -->
+<section class="types-hero">
+    <div class="container">
+        <h1 class="types-title mb-1">
+            <i class="bi bi-grid-3x3-gap me-2" style="color: #D4AF37;"></i>Loại phòng
+        </h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem;">Khám phá các loại phòng và tiện nghi của Sun Hotel</p>
+    </div>
+</section>
+
+<!-- ROOM TYPES GRID -->
+<section style="padding: 2rem 0 4rem; background: #F5F0E8; min-height: 60vh;">
+    <div class="container">
+        @if (Model.Any())
+        {
+            <div class="row g-4">
+                @foreach (var type in Model)
+                {
+                    var amenities = GetAmenityList(type.Amenities);
+                    <div class="col-md-6 col-lg-4">
+                        <div class="type-card">
+                            @if (!string.IsNullOrEmpty(type.ImageUrl))
+                            {
+                                <img src="@type.ImageUrl" alt="@type.Name" class="type-card-img" />
+                            }
+                            else
+                            {
+                                <div class="type-card-img-placeholder">
+                                    <i class="bi bi-building" style="font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
+                                </div>
+                            }
+                            <div class="type-card-body">
+                                <div class="section-label">Loại phòng</div>
+                                <h5 class="type-card-name">@type.Name</h5>
+                                <div class="type-card-price">
+                                    @type.BasePrice.ToString("N0")₫ <small>/ đêm</small>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(type.Description))
+                                {
+                                    <p class="type-card-desc">@type.Description</p>
+                                }
+
+                                <div class="type-card-meta">
+                                    <span><i class="bi bi-people me-1"></i> Tối đa @type.MaxGuests khách</span>
+                                    <span><i class="bi bi-door-open me-1"></i> @type.Rooms.Count phòng</span>
+                                </div>
+
+                                @if (amenities.Any())
+                                {
+                                    <div class="mb-3">
+                                        @foreach (var amenity in amenities.Take(6))
+                                        {
+                                            <span class="amenity-tag">
+                                                <i class="bi @GetAmenityIcon(amenity)"></i>
+                                                @amenity
+                                            </span>
+                                        }
+                                        @if (amenities.Count > 6)
+                                        {
+                                            <span class="amenity-tag">+@(amenities.Count - 6) more</span>
+                                        }
+                                    </div>
+                                }
+
+                                <a asp-controller="Booking" asp-action="Create" asp-route-roomTypeId="@type.Id" class="btn btn-book w-100">
+                                    <i class="bi bi-calendar-plus me-1"></i> Đặt phòng này
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(212,175,55,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                    <i class="bi bi-grid-3x3-gap" style="font-size: 2rem; color: #D4AF37;"></i>
+                </div>
+                <h5 style="font-family: 'Playfair Display', serif; color: #0F2540; font-weight: 700;">Không có loại phòng</h5>
+                <p style="color: #6b7280; font-size: 0.9rem;">Hiện tại chưa có loại phòng nào được cung cấp.</p>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-book mt-3">
+                    <i class="bi bi-house me-1"></i> Về trang chủ
+                </a>
+            </div>
+        }
+    </div>
+</section>

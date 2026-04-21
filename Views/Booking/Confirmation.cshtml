@@ -1,0 +1,336 @@
+@model BookingDetailViewModel
+@{
+    ViewData["Title"] = "Xac nhan dat phong - Sun Hotel";
+    var booking = Model.Booking;
+}
+
+@section Styles {
+<style>
+    .confirmation-hero {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 50%, #2E8B8B 100%);
+        padding: 3rem 0 2rem;
+    }
+    .success-banner {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem 2.5rem;
+        box-shadow: 0 10px 40px rgba(15,37,64,0.1);
+        border: 1px solid rgba(0,0,0,0.05);
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .success-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .booking-code {
+        font-family: 'Playfair Display', serif;
+        font-size: 2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 2px;
+    }
+    .detail-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    .detail-card-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #0F2540;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .detail-card-title i {
+        color: #D4AF37;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f3f0ea;
+        font-size: 0.9rem;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        color: #6b7280;
+    }
+    .detail-value {
+        font-weight: 600;
+        color: #0F2540;
+        text-align: right;
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .status-pending {
+        background: rgba(245,158,11,0.1);
+        color: #d97706;
+    }
+    .status-confirmed {
+        background: rgba(16,185,129,0.1);
+        color: #059669;
+    }
+    .btn-print {
+        background: linear-gradient(135deg, #0F2540, #1A3C5E);
+        color: white;
+        font-weight: 600;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 24px;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    .btn-print:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(15,37,64,0.25);
+        color: white;
+    }
+    .btn-gold-sm {
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        color: #1A3C5E;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    .btn-gold-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(212,175,55,0.3);
+        color: #1A3C5E;
+    }
+
+    @@media print {
+        nav, footer, .no-print { display: none !important; }
+        .detail-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+        .success-banner { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
+}
+
+<!-- Hero -->
+<section class="confirmation-hero">
+    <div class="container">
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 2rem; color: white; margin-bottom: 0.25rem;">
+            <i class="bi bi-check-circle me-2" style="color: #D4AF37;"></i>Chi ti&#7871;t &#273;&#7863;t ph&#242;ng
+        </h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem;">Th&#244;ng tin booking c&#7911;a b&#7841;n</p>
+    </div>
+</section>
+
+<section style="background: #F5F0E8; padding: 2rem 0 4rem;">
+    <div class="container">
+        <!-- Success Banner -->
+        <div class="success-banner">
+            <div class="success-icon">
+                <i class="bi bi-check-circle-fill" style="font-size: 2rem; color: #10b981;"></i>
+            </div>
+            <h4 style="font-family: 'Playfair Display', serif; font-weight: 700; color: #0F2540; margin-bottom: 0.5rem;">
+                &#272;&#7863;t ph&#242;ng th&#224;nh c&#244;ng!
+            </h4>
+            <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+                M&#227; &#273;&#7863;t ph&#242;ng c&#7911;a b&#7841;n l&#224;:
+            </p>
+            <div class="booking-code">@booking.BookingCode</div>
+            <p style="color: #6b7280; font-size: 0.82rem; margin-top: 0.75rem;">
+                Vui l&#242;ng l&#432;u m&#227; n&#224;y &#273;&#7875; tra c&#7913;u th&#244;ng tin booking
+            </p>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Guest Info -->
+                <div class="detail-card">
+                    <h5 class="detail-card-title">
+                        <i class="bi bi-person-circle"></i> Th&#244;ng tin kh&#225;ch h&#224;ng
+                    </h5>
+                    <div class="detail-row">
+                        <span class="detail-label">H&#7885; t&#234;n</span>
+                        <span class="detail-value">@booking.GuestName</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">S&#7889; &#273;i&#7879;n tho&#7841;i</span>
+                        <span class="detail-value">@booking.Phone</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(booking.Email))
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value">@booking.Email</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(booking.IdNumber))
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">CMND/CCCD</span>
+                            <span class="detail-value">@booking.IdNumber</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Booking Info -->
+                <div class="detail-card">
+                    <h5 class="detail-card-title">
+                        <i class="bi bi-calendar-check"></i> Th&#244;ng tin &#273;&#7863;t ph&#242;ng
+                    </h5>
+                    <div class="detail-row">
+                        <span class="detail-label">M&#227; booking</span>
+                        <span class="detail-value" style="color: #D4AF37;">@booking.BookingCode</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Lo&#7841;i ph&#242;ng</span>
+                        <span class="detail-value">@booking.RoomType?.Name</span>
+                    </div>
+                    @if (booking.Room != null)
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">S&#7889; ph&#242;ng</span>
+                            <span class="detail-value">@booking.Room.RoomNumber</span>
+                        </div>
+                    }
+                    <div class="detail-row">
+                        <span class="detail-label">Ng&#224;y nh&#7853;n ph&#242;ng</span>
+                        <span class="detail-value">@booking.CheckInDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Ng&#224;y tr&#7843; ph&#242;ng</span>
+                        <span class="detail-value">@booking.CheckOutDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">S&#7889; &#273;&#234;m</span>
+                        <span class="detail-value">@((booking.CheckOutDate.DayNumber - booking.CheckInDate.DayNumber)) &#273;&#234;m</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">S&#7889; kh&#225;ch</span>
+                        <span class="detail-value">@booking.NumGuests</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Tr&#7841;ng th&#225;i</span>
+                        <span class="detail-value">
+                            @switch (booking.Status)
+                            {
+                                case BookingStatus.Pending:
+                                    <span class="status-badge status-pending"><i class="bi bi-clock"></i> Ch&#7901; x&#225;c nh&#7853;n</span>
+                                    break;
+                                case BookingStatus.Confirmed:
+                                    <span class="status-badge status-confirmed"><i class="bi bi-check-circle"></i> &#272;&#227; x&#225;c nh&#7853;n</span>
+                                    break;
+                                case BookingStatus.CheckedIn:
+                                    <span class="status-badge" style="background: rgba(59,130,246,0.1); color: #2563eb;"><i class="bi bi-box-arrow-in-right"></i> &#272;&#227; check-in</span>
+                                    break;
+                                case BookingStatus.CheckedOut:
+                                    <span class="status-badge" style="background: rgba(107,114,128,0.1); color: #4b5563;"><i class="bi bi-box-arrow-right"></i> &#272;&#227; check-out</span>
+                                    break;
+                                case BookingStatus.Cancelled:
+                                    <span class="status-badge" style="background: rgba(239,68,68,0.1); color: #dc2626;"><i class="bi bi-x-circle"></i> &#272;&#227; h&#7911;y</span>
+                                    break;
+                                default:
+                                    <span class="status-badge" style="background: rgba(107,114,128,0.1); color: #4b5563;">@booking.Status</span>
+                                    break;
+                            }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(booking.Notes))
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">Ghi ch&#250;</span>
+                            <span class="detail-value">@booking.Notes</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Price Summary -->
+                <div class="detail-card">
+                    <h5 class="detail-card-title">
+                        <i class="bi bi-receipt"></i> Chi ph&#237;
+                    </h5>
+                    <div class="detail-row">
+                        <span class="detail-label">Ti&#7873;n ph&#242;ng</span>
+                        <span class="detail-value">@booking.TotalAmount.ToString("N0")&#8363;</span>
+                    </div>
+                    @if (Model.Services.Any())
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">D&#7883;ch v&#7909;</span>
+                            <span class="detail-value">@Model.Services.Sum(s => s.TotalAmount).ToString("N0")&#8363;</span>
+                        </div>
+                    }
+                    <hr style="border-color: #f3f0ea; margin: 0.5rem 0;" />
+                    <div class="detail-row" style="border-bottom: none;">
+                        <span style="font-weight: 700; color: #0F2540;">T&#7893;ng c&#7897;ng</span>
+                        <span style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.3rem; color: #D4AF37;">
+                            @((booking.TotalAmount + Model.Services.Sum(s => s.TotalAmount)).ToString("N0"))&#8363;
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="detail-card no-print">
+                    <h5 class="detail-card-title">
+                        <i class="bi bi-gear"></i> Thao t&#225;c
+                    </h5>
+                    <div class="d-grid gap-2">
+                        @if (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.Confirmed)
+                        {
+                            <a asp-controller="Payment" asp-action="Index" asp-route-code="@booking.BookingCode"
+                               class="btn btn-gold-sm text-center" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                                <i class="bi bi-credit-card me-1"></i> Thanh toan ngay
+                            </a>
+                        }
+                        <button onclick="window.print()" class="btn btn-print">
+                            <i class="bi bi-printer me-1"></i> In th&#244;ng tin
+                        </button>
+                        <a asp-controller="Booking" asp-action="Lookup" class="btn btn-gold-sm text-center">
+                            <i class="bi bi-search me-1"></i> Tra c&#7913;u kh&#225;c
+                        </a>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 10px;">
+                            <i class="bi bi-house me-1"></i> Trang ch&#7911;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Notice -->
+                <div style="background: #F5F0E8; border-radius: 12px; padding: 1rem 1.25rem; border: 1px solid rgba(212,175,55,0.2);">
+                    <h6 style="font-size: 0.8rem; font-weight: 700; color: #D4AF37; margin-bottom: 0.5rem;">
+                        <i class="bi bi-info-circle me-1"></i> L&#432;u &#253;
+                    </h6>
+                    <ul style="font-size: 0.8rem; color: #6b7280; margin: 0; padding-left: 1.2rem;">
+                        <li>Check-in: 14:00 | Check-out: 12:00</li>
+                        <li>Mang theo CMND/CCCD khi check-in</li>
+                        <li>Hotline: <strong>0123 456 789</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

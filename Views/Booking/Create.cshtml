@@ -1,0 +1,357 @@
+@model CreateBookingViewModel
+@{
+    ViewData["Title"] = "Đặt phòng - Sun Hotel";
+    var roomTypes = ViewBag.RoomTypes as List<RoomType> ?? new List<RoomType>();
+}
+
+@section Styles {
+<style>
+    .booking-hero {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 50%, #2E8B8B 100%);
+        padding: 3rem 0 2rem;
+    }
+    .booking-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 2rem;
+        color: white;
+    }
+    .step-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 2rem;
+    }
+    .step-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .step-num {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .step-active .step-num {
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        color: #1A3C5E;
+    }
+    .step-inactive .step-num {
+        background: #e5e7eb;
+        color: #9ca3af;
+    }
+    .step-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .step-active .step-label {
+        color: #0F2540;
+    }
+    .step-inactive .step-label {
+        color: #9ca3af;
+    }
+    .step-line {
+        flex: 1;
+        height: 2px;
+        background: #e5e7eb;
+        margin: 0 12px;
+    }
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    .form-card-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: #0F2540;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-card-title i {
+        color: #D4AF37;
+    }
+    .form-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #1A3C5E;
+    }
+    .form-control, .form-select {
+        border: 1px solid #e0d8cc;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        color: #1A3C5E;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(212,175,55,0.35);
+        color: #1A3C5E;
+    }
+    .price-hint {
+        background: #F5F0E8;
+        border-radius: 12px;
+        padding: 1.25rem;
+        border: 1px solid rgba(212,175,55,0.2);
+    }
+    .price-hint-title {
+        font-weight: 700;
+        color: #D4AF37;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+    }
+    .room-type-option {
+        border: 2px solid #e0d8cc;
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .room-type-option:hover {
+        border-color: #D4AF37;
+        background: rgba(212,175,55,0.03);
+    }
+    .room-type-option.selected {
+        border-color: #D4AF37;
+        background: rgba(212,175,55,0.05);
+    }
+</style>
+}
+
+<!-- ═══ HERO ═══ -->
+<section class="booking-hero">
+    <div class="container">
+        <h1 class="booking-title mb-1">
+            <i class="bi bi-calendar-plus me-2" style="color: #D4AF37;"></i>Đặt phòng
+        </h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem;">Điền thông tin để đặt phòng tại Sun Hotel</p>
+    </div>
+</section>
+
+<section style="background: #F5F0E8; padding: 2rem 0 4rem;">
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-item step-active">
+                <div class="step-num">1</div>
+                <span class="step-label">Thông tin khách</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item step-active">
+                <div class="step-num">2</div>
+                <span class="step-label">Chọn phòng</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item step-active">
+                <div class="step-num">3</div>
+                <span class="step-label">Chọn ngày</span>
+            </div>
+        </div>
+
+        <form asp-controller="Booking" asp-action="Create" method="post" id="bookingForm">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="border-radius: 12px; font-size: 0.88rem; display: none;"></div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- STEP 1: Guest Info -->
+                    <div class="form-card">
+                        <h5 class="form-card-title">
+                            <i class="bi bi-person-circle"></i> Thông tin khách hàng
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="GuestName" class="form-label"></label>
+                                <input asp-for="GuestName" class="form-control" placeholder="Nhập họ tên đầy đủ" />
+                                <span asp-validation-for="GuestName" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Phone" class="form-label"></label>
+                                <input asp-for="Phone" class="form-control" placeholder="VD: 0912345678" />
+                                <span asp-validation-for="Phone" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control" placeholder="VD: email@example.com" />
+                                <span asp-validation-for="Email" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="IdNumber" class="form-label"></label>
+                                <input asp-for="IdNumber" class="form-control" placeholder="Số CMND hoặc CCCD" />
+                                <span asp-validation-for="IdNumber" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Room Selection -->
+                    <div class="form-card">
+                        <h5 class="form-card-title">
+                            <i class="bi bi-building"></i> Chọn loại phòng
+                        </h5>
+                        <div class="mb-3">
+                            <label asp-for="RoomTypeId" class="form-label"></label>
+                            <select asp-for="RoomTypeId" class="form-select" id="roomTypeSelect">
+                                <option value="">-- Chọn loại phòng --</option>
+                                @foreach (var rt in roomTypes)
+                                {
+                                    <option value="@rt.Id" data-price="@rt.BasePrice" data-max-guests="@rt.MaxGuests">
+                                        @rt.Name - @rt.BasePrice.ToString("N0")₫/đêm (tối đa @rt.MaxGuests khách)
+                                    </option>
+                                }
+                            </select>
+                            <span asp-validation-for="RoomTypeId" class="text-danger" style="font-size: 0.8rem;"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="NumGuests" class="form-label"></label>
+                            <input asp-for="NumGuests" type="number" class="form-control" min="1" max="10" style="max-width: 150px;" />
+                            <span asp-validation-for="NumGuests" class="text-danger" style="font-size: 0.8rem;"></span>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Dates -->
+                    <div class="form-card">
+                        <h5 class="form-card-title">
+                            <i class="bi bi-calendar-range"></i> Chọn ngày lưu trú
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="CheckInDate" class="form-label"></label>
+                                <input asp-for="CheckInDate" type="date" class="form-control" id="checkInDate"
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="CheckInDate" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CheckOutDate" class="form-label"></label>
+                                <input asp-for="CheckOutDate" type="date" class="form-control" id="checkOutDate"
+                                       min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="CheckOutDate" class="text-danger" style="font-size: 0.8rem;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-card">
+                        <h5 class="form-card-title">
+                            <i class="bi bi-chat-text"></i> Ghi chú
+                        </h5>
+                        <div>
+                            <label asp-for="Notes" class="form-label"></label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Yêu cầu đặc biệt, ghi chú thêm..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-submit">
+                        <i class="bi bi-check-circle me-2"></i> Đặt phòng
+                    </button>
+                </div>
+
+                <!-- Sidebar: Price Hint -->
+                <div class="col-lg-4">
+                    <div class="form-card" style="position: sticky; top: 1rem;">
+                        <h5 class="form-card-title">
+                            <i class="bi bi-receipt"></i> Ước tính chi phí
+                        </h5>
+                        <div class="price-hint">
+                            <div class="d-flex justify-content-between mb-2" style="font-size: 0.88rem;">
+                                <span style="color: #6b7280;">Loại phòng:</span>
+                                <span id="hintRoomType" style="font-weight: 600; color: #0F2540;">--</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2" style="font-size: 0.88rem;">
+                                <span style="color: #6b7280;">Giá/đêm:</span>
+                                <span id="hintPrice" style="font-weight: 600; color: #D4AF37;">--</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2" style="font-size: 0.88rem;">
+                                <span style="color: #6b7280;">Số đêm:</span>
+                                <span id="hintNights" style="font-weight: 600; color: #0F2540;">--</span>
+                            </div>
+                            <hr style="border-color: rgba(212,175,55,0.2);" />
+                            <div class="d-flex justify-content-between" style="font-size: 1.05rem;">
+                                <span style="font-weight: 700; color: #0F2540;">Tổng ước tính:</span>
+                                <span id="hintTotal" style="font-weight: 700; color: #D4AF37; font-family: 'Playfair Display', serif; font-size: 1.2rem;">--</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.25rem; font-size: 0.8rem; color: #6b7280;">
+                            <p class="mb-1"><i class="bi bi-info-circle me-1" style="color: #D4AF37;"></i> Giá chưa bao gồm dịch vụ phụ trội</p>
+                            <p class="mb-1"><i class="bi bi-clock me-1" style="color: #D4AF37;"></i> Check-in: 14:00 | Check-out: 12:00</p>
+                            <p class="mb-0"><i class="bi bi-telephone me-1" style="color: #D4AF37;"></i> Hotline: 0123 456 789</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const roomSelect = document.getElementById('roomTypeSelect');
+            const checkIn = document.getElementById('checkInDate');
+            const checkOut = document.getElementById('checkOutDate');
+
+            function updateHint() {
+                const opt = roomSelect.options[roomSelect.selectedIndex];
+                const price = opt ? parseFloat(opt.dataset.price) || 0 : 0;
+                const name = opt && opt.value ? opt.text.split(' - ')[0] : '--';
+
+                document.getElementById('hintRoomType').textContent = name;
+                document.getElementById('hintPrice').textContent = price > 0 ? price.toLocaleString('vi-VN') + '₫' : '--';
+
+                let nights = 0;
+                if (checkIn.value && checkOut.value) {
+                    const d1 = new Date(checkIn.value);
+                    const d2 = new Date(checkOut.value);
+                    nights = Math.max(0, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
+                }
+                document.getElementById('hintNights').textContent = nights > 0 ? nights + ' đêm' : '--';
+
+                const total = price * nights;
+                document.getElementById('hintTotal').textContent = total > 0 ? total.toLocaleString('vi-VN') + '₫' : '--';
+            }
+
+            roomSelect.addEventListener('change', updateHint);
+            checkIn.addEventListener('change', function () {
+                if (checkIn.value) {
+                    const min = new Date(checkIn.value);
+                    min.setDate(min.getDate() + 1);
+                    checkOut.min = min.toISOString().split('T')[0];
+                    if (checkOut.value && new Date(checkOut.value) <= new Date(checkIn.value)) {
+                        checkOut.value = min.toISOString().split('T')[0];
+                    }
+                }
+                updateHint();
+            });
+            checkOut.addEventListener('change', updateHint);
+
+            updateHint();
+        })();
+    </script>
+}

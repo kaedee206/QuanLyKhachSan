@@ -1,0 +1,109 @@
+@model CreateBookingViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Tạo Booking Mới";
+    var roomTypes = ViewBag.RoomTypes as List<RoomType> ?? new List<RoomType>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-plus-circle me-2" style="color: #D4AF37;"></i>
+            Tạo Booking Mới
+        </h4>
+        <small class="text-muted">Đặt phòng cho khách hàng</small>
+    </div>
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                <form asp-action="AdminCreate" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Thông tin khách -->
+                    <h6 class="mb-3" style="color: #1A3C5E; font-weight: 700; border-bottom: 2px solid #D4AF37; padding-bottom: 8px;">
+                        <i class="bi bi-person me-2"></i>Thông tin khách hàng
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="GuestName" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="GuestName" class="form-control" style="border-radius: 8px;" placeholder="Nguyễn Văn A" />
+                            <span asp-validation-for="GuestName" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="Phone" class="form-control" style="border-radius: 8px;" placeholder="0901234567" />
+                            <span asp-validation-for="Phone" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="Email" class="form-control" style="border-radius: 8px;" placeholder="email@example.com" />
+                            <span asp-validation-for="Email" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="IdNumber" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="IdNumber" class="form-control" style="border-radius: 8px;" placeholder="CMND hoặc CCCD" />
+                            <span asp-validation-for="IdNumber" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin phòng -->
+                    <h6 class="mb-3" style="color: #1A3C5E; font-weight: 700; border-bottom: 2px solid #D4AF37; padding-bottom: 8px;">
+                        <i class="bi bi-building me-2"></i>Thông tin đặt phòng
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="RoomTypeId" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <select asp-for="RoomTypeId" class="form-select" style="border-radius: 8px;">
+                                <option value="">-- Chọn loại phòng --</option>
+                                @foreach (var rt in roomTypes)
+                                {
+                                    <option value="@rt.Id">@rt.Name — @rt.BasePrice.ToString("N0") VNĐ/đêm (tối đa @rt.MaxGuests khách)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="RoomTypeId" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="NumGuests" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="NumGuests" type="number" min="1" max="10" class="form-control" style="border-radius: 8px;" />
+                            <span asp-validation-for="NumGuests" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CheckInDate" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="CheckInDate" type="date" class="form-control" style="border-radius: 8px;" />
+                            <span asp-validation-for="CheckInDate" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CheckOutDate" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="CheckOutDate" type="date" class="form-control" style="border-radius: 8px;" />
+                            <span asp-validation-for="CheckOutDate" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú -->
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" style="border-radius: 8px;" placeholder="Yêu cầu đặc biệt..."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger" style="font-size: 0.78rem;"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px; padding: 10px 30px;">
+                            <i class="bi bi-check-lg"></i> Tạo booking
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px; padding: 10px 30px;">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

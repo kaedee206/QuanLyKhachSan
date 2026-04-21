@@ -1,0 +1,108 @@
+@model PaginatedList<Booking>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Check-out";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-box-arrow-right me-2" style="color: #1A3C5E;"></i>
+            Check-out
+        </h4>
+        <small class="text-muted">Danh sách booking đang ở, sẵn sàng trả phòng (@Model.TotalCount)</small>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Mã booking</th>
+                        <th class="border-0 py-2">Tên khách</th>
+                        <th class="border-0 py-2">Phòng</th>
+                        <th class="border-0 py-2">Nhận phòng</th>
+                        <th class="border-0 py-2">Trả phòng (dự kiến)</th>
+                        <th class="border-0 py-2">Tổng tiền</th>
+                        <th class="border-0 py-2">Giảm giá (%)</th>
+                        <th class="border-0 py-2">Thanh toán</th>
+                        <th class="border-0 py-2 text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.Items)
+                    {
+                        <tr>
+                            <td class="px-4">
+                                <a asp-action="Detail" asp-route-id="@b.Id" style="color: #1A3C5E; font-weight: 600; text-decoration: none;">@b.BookingCode</a>
+                            </td>
+                            <td class="fw-bold">@b.GuestName</td>
+                            <td>
+                                <span class="badge bg-light text-dark" style="font-size: 0.8rem;">@(b.Room?.RoomNumber ?? "—")</span>
+                            </td>
+                            <td>@(b.ActualCheckIn?.ToString("dd/MM/yyyy HH:mm") ?? b.CheckInDate.ToString("dd/MM/yyyy"))</td>
+                            <td>@b.CheckOutDate.ToString("dd/MM/yyyy")</td>
+                            <td class="fw-bold" style="color: #D4AF37;">@((b.Invoice?.TotalAmount ?? b.TotalAmount).ToString("N0")) VNĐ</td>
+                            <td colspan="3" class="text-end pe-4">
+                                <form asp-controller="Booking" asp-action="CheckOut" method="post" class="d-inline-flex align-items-center gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="code" value="@b.BookingCode" />
+                                    <input type="number" name="Discount" value="0" min="0" max="100" step="1" class="form-control form-control-sm" style="width: 65px; border-radius: 6px; font-size: 0.8rem;" placeholder="%" />
+                                    <select name="PaymentMethod" class="form-select form-select-sm" style="width: 110px; border-radius: 6px; font-size: 0.8rem;">
+                                        <option value="@PaymentMethod.Cash">Tiền mặt</option>
+                                        <option value="@PaymentMethod.Transfer">Chuyển khoản</option>
+                                        <option value="@PaymentMethod.VietQR">VietQR</option>
+                                        <option value="@PaymentMethod.Card">Thẻ</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm" style="background: #1A3C5E; color: white; border-radius: 8px; font-size: 0.78rem; white-space: nowrap;"
+                                            onclick="return confirm('Xác nhận check-out cho @b.GuestName?');">
+                                        <i class="bi bi-box-arrow-right"></i> Check-out
+                                    </button>
+                                </form>
+                                <a asp-action="Detail" asp-route-id="@b.Id" class="btn btn-sm btn-outline-secondary ms-1" style="border-radius: 6px; font-size: 0.75rem;" title="Chi tiết">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="bi bi-check-circle" style="font-size: 2.5rem; color: #2E8B8B;"></i>
+                                <div class="mt-2">Không có booking nào cần check-out</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAGINATION ═══ -->
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3 d-flex justify-content-center">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
+                <a class="page-link" asp-action="CheckOut" asp-route-Page="@(Model.Page - 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="CheckOut" asp-route-Page="@i" style="border-radius: 6px; margin: 0 2px; @(i == Model.Page ? "background: #1A3C5E; border-color: #1A3C5E;" : "")">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" asp-action="CheckOut" asp-route-Page="@(Model.Page + 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

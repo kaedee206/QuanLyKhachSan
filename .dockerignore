@@ -1,0 +1,29 @@
+## Build artifacts
+bin/
+obj/
+publish/
+out/
+
+## Logs
+logs/
+
+## Sensitive config
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+.env
+.env.*
+!.env.example
+
+## Test files
+test_accounts.txt
+
+## OS
+.DS_Store
+Thumbs.db
+
+## VS / Rider
+.vs/
+.idea/
+*.user

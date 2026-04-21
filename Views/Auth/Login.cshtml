@@ -1,0 +1,229 @@
+@model LoginViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dang nhap Nhan Vien - Sun Hotel</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 40%, #2E8B8B 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            right: -15%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(46,139,139,0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+        .sun-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #D4AF37, #F0D060);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #1A3C5E;
+            margin: 0 auto 1rem;
+        }
+        .login-title {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #0F2540;
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+        .role-cta {
+            background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
+            border: 1px solid rgba(212,175,55,0.25);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .role-cta p {
+            color: #1A3C5E;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .form-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #1A3C5E;
+        }
+        .form-control, .form-select {
+            border: 1px solid #e0d8cc;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #D4AF37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #D4AF37, #F0D060);
+            color: #1A3C5E;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212,175,55,0.35);
+            color: #1A3C5E;
+        }
+        .input-group-text {
+            background: #F5F0E8;
+            border: 1px solid #e0d8cc;
+            color: #D4AF37;
+            border-radius: 10px 0 0 10px;
+        }
+        .input-group .form-control {
+            border-radius: 0 10px 10px 0;
+        }
+        .input-group .form-select {
+            border-radius: 0 10px 10px 0;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+        .back-link a {
+            color: #6b7280;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            color: #D4AF37;
+        }
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="sun-icon">
+            <i class="bi bi-sun-fill"></i>
+        </div>
+        <h1 class="login-title">Sun Hotel</h1>
+        <p class="login-subtitle">Trang Đăng Nhập Nhân Viên Khách Sạn</p>
+
+        <div class="role-cta">
+            <p>
+                <i class="bi bi-person-badge me-1"></i>
+                Bạn là Nhân Viên Khách Sạn?
+            </p>
+        </div>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger py-2 px-3" style="font-size: 0.85rem; border-radius: 10px;">
+                <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
+            </div>
+        }
+
+        <form asp-controller="Auth" asp-action="Login" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3" style="font-size: 0.85rem;"></div>
+
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input asp-for="Username" class="form-control" placeholder="Nhập tên đăng nhập" autocomplete="username" />
+                </div>
+                <span asp-validation-for="Username" class="text-danger" style="font-size: 0.8rem;"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input asp-for="Password" class="form-control" placeholder="Nhập mật khẩu" autocomplete="current-password" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger" style="font-size: 0.8rem;"></span>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input asp-for="RememberMe" class="form-check-input" style="border-color: #D4AF37;" />
+                <label asp-for="RememberMe" class="form-check-label" style="font-size: 0.85rem; color: #6b7280;">Ghi nhớ đăng nhập</label>
+            </div>
+
+            <button type="submit" class="btn btn-login">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+            </button>
+        </form>
+
+        <div class="back-link">
+            <a asp-controller="Home" asp-action="Index">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại trang chủ
+            </a>
+        </div>
+    </div>
+
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+@model List<Room>
+@{
+    ViewData["Title"] = "Danh sách phòng - Sun Hotel";
+    var roomTypes = ViewBag.RoomTypes as List<RoomType> ?? new List<RoomType>();
+    var search = ViewBag.Search as RoomSearchViewModel ?? new RoomSearchViewModel();
+}
+
+@section Styles {
+<style>
+    .listing-hero {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 50%, #2E8B8B 100%);
+        padding: 3rem 0 4rem;
+        margin-bottom: -2rem;
+    }
+    .listing-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 2rem;
+        color: white;
+    }
+    .filter-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 10px 40px rgba(15,37,64,0.12);
+        border: 1px solid rgba(0,0,0,0.05);
+        position: relative;
+        z-index: 10;
+    }
+    .filter-card .form-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #0F2540;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .filter-card .form-control,
+    .filter-card .form-select {
+        border: 1px solid #e0d8cc;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+    }
+    .hotel-room-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        height: 100%;
+    }
+    .hotel-room-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+    }
+    .hotel-room-card-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #1A3C5E, #2E8B8B);
+        display: block;
+    }
+    .hotel-room-card-body {
+        padding: 1.25rem;
+    }
+    .hotel-room-card-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #0F2540;
+        margin-bottom: 0.4rem;
+    }
+    .hotel-room-card-type {
+        display: inline-block;
+        background: rgba(212,175,55,0.1);
+        color: #D4AF37;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        margin-bottom: 0.6rem;
+    }
+    .hotel-room-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+    .hotel-room-card-price {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #D4AF37;
+    }
+    .hotel-room-card-price small {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: #6b7280;
+        font-family: 'Inter', sans-serif;
+    }
+    .btn-book {
+        background: linear-gradient(135deg, #D4AF37, #F0D060);
+        color: #1A3C5E;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 20px;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+    }
+    .btn-book:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(212,175,55,0.3);
+        color: #1A3C5E;
+    }
+    .status-available {
+        color: #10b981;
+    }
+    .status-unavailable {
+        color: #ef4444;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .room-count-badge {
+        background: rgba(212,175,55,0.15);
+        border: 1px solid rgba(212,175,55,0.3);
+        color: #D4AF37;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 30px;
+    }
+</style>
+}
+
+<!-- ═══ HERO ═══ -->
+<section class="listing-hero">
+    <div class="container">
+        <h1 class="listing-title mb-1">
+            <i class="bi bi-building me-2" style="color: #D4AF37;"></i>Danh sách phòng
+        </h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem;">Tìm và đặt phòng phù hợp với nhu cầu của bạn</p>
+    </div>
+</section>
+
+<!-- ═══ FILTER BAR ═══ -->
+<section style="margin-top: -1rem; margin-bottom: 2rem;">
+    <div class="container">
+        <div class="filter-card">
+            <form asp-controller="Room" asp-action="Listing" method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Ngày nhận phòng</label>
+                        <input type="date" name="CheckInDate" class="form-control"
+                               value="@(search.CheckInDate?.ToString("yyyy-MM-dd") ?? "")"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ngày trả phòng</label>
+                        <input type="date" name="CheckOutDate" class="form-control"
+                               value="@(search.CheckOutDate?.ToString("yyyy-MM-dd") ?? "")"
+                               min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Loại phòng</label>
+                        <select name="RoomTypeId" class="form-select">
+                            <option value="">Tất cả</option>
+                            @foreach (var rt in roomTypes)
+                            {
+                                <option value="@rt.Id" selected="@(search.RoomTypeId == rt.Id)">@rt.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Số khách</label>
+                        <select name="NumGuests" class="form-select">
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <option value="@i" selected="@(search.NumGuests == i)">@i khách</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-book w-100" style="padding: 10px 14px;">
+                            <i class="bi bi-search me-1"></i> Tìm phòng
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ ROOM GRID ═══ -->
+<section style="padding: 0 0 4rem; background: #F5F0E8; min-height: 50vh;">
+    <div class="container" style="padding-top: 2rem;">
+        @if (Model.Any())
+        {
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="room-count-badge">
+                    <i class="bi bi-grid me-1"></i> @Model.Count phòng
+                </span>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var room in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="hotel-room-card">
+                            @if (!string.IsNullOrEmpty(room.RoomType?.ImageUrl))
+                            {
+                                <img src="@room.RoomType.ImageUrl" alt="@room.RoomType.Name" class="hotel-room-card-img" />
+                            }
+                            else
+                            {
+                                <div class="hotel-room-card-img d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-building" style="font-size: 2.5rem; color: rgba(255,255,255,0.3);"></i>
+                                </div>
+                            }
+                            <div class="hotel-room-card-body">
+                                <div class="d-flex align-items-start justify-content-between mb-1">
+                                    <h5 class="hotel-room-card-name mb-0">Phòng @room.RoomNumber</h5>
+                                    @if (room.Status == RoomStatus.Available)
+                                    {
+                                        <span class="status-available" style="font-size: 0.78rem; font-weight: 600;">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Trống
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-unavailable" style="font-size: 0.78rem; font-weight: 600;">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Đã đặt
+                                        </span>
+                                    }
+                                </div>
+                                <span class="hotel-room-card-type">@room.RoomType?.Name</span>
+                                <div class="hotel-room-card-meta">
+                                    <span><i class="bi bi-people me-1"></i> Tối đa @(room.RoomType?.MaxGuests ?? 0) khách</span>
+                                    <span><i class="bi bi-layers me-1"></i> Tầng @room.Floor</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="hotel-room-card-price">
+                                        @(room.RoomType?.BasePrice.ToString("N0") ?? "0")₫ <small>/đêm</small>
+                                    </div>
+                                    @if (room.Status == RoomStatus.Available)
+                                    {
+                                        <a asp-controller="Booking" asp-action="Create" asp-route-roomTypeId="@room.RoomTypeId" class="btn btn-book">
+                                            <i class="bi bi-calendar-plus me-1"></i> Đặt ngay
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="btn btn-secondary btn-sm disabled" style="border-radius: 10px; font-size: 0.85rem;">Hết phòng</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(212,175,55,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                    <i class="bi bi-search" style="font-size: 2rem; color: #D4AF37;"></i>
+                </div>
+                <h5 style="font-family: 'Playfair Display', serif; color: #0F2540; font-weight: 700;">Không tìm thấy phòng</h5>
+                <p style="color: #6b7280; font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
+                    Không có phòng nào phù hợp với tiêu chí tìm kiếm. Vui lòng thử lại với bộ lọc khác.
+                </p>
+                <a asp-controller="Room" asp-action="Listing" class="btn btn-book mt-3">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Xem tất cả phòng
+                </a>
+            </div>
+        }
+    </div>
+</section>

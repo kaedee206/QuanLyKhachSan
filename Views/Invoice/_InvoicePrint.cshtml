@@ -1,0 +1,551 @@
+@model QuanLyKhachSan.Models.Entities.Invoice
+@using QuanLyKhachSan.Models.Entities
+@using QuanLyKhachSan.Models.Enums
+@{
+    var b = Model.Booking;
+    var services = b?.Services?.ToList() ?? new List<Service>();
+    var serviceTotal = services.Sum(s => s.TotalAmount);
+    var nights = (b?.CheckOutDate.DayNumber - b?.CheckInDate.DayNumber) ?? 1;
+
+    var payBadge = Model.PaymentStatus switch
+    {
+        PaymentStatus.Unpaid => "badge-danger",
+        PaymentStatus.Pending => "badge-warning",
+        PaymentStatus.Paid => "badge-success",
+        PaymentStatus.Refunded => "badge-info",
+        _ => "badge-secondary"
+    };
+    var payText = Model.PaymentStatus switch
+    {
+        PaymentStatus.Unpaid => "CHUA THANH TOAN",
+        PaymentStatus.Pending => "DANG CHO",
+        PaymentStatus.Paid => "DA THANH TOAN",
+        PaymentStatus.Refunded => "DA HOAN TIEN",
+        _ => Model.PaymentStatus.ToString().ToUpper()
+    };
+    var servicesTotal = services.Sum(s => s.TotalAmount);
+    var computedTotal = Model.RoomCharge + servicesTotal - Model.Discount;
+
+    var methodText = Model.PaymentMethod switch
+    {
+        PaymentMethod.Cash => "Tien mat",
+        PaymentMethod.Transfer => "Chuyen khoan",
+        PaymentMethod.VietQR => "VietQR",
+        PaymentMethod.MoMo => "MoMo",
+        PaymentMethod.SePay => "SePay",
+        PaymentMethod.Card => "The",
+        _ => Model.PaymentMethod.ToString()
+    };
+
+    string formatCurrency(decimal amount) => amount.ToString("N0");
+    string formatDate(DateTime dt) => dt.ToString("dd/MM/yyyy HH:mm");
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoa don @Model.InvoiceNumber</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'DejaVu Sans', Arial, sans-serif;
+            font-size: 13px;
+            color: #1a1a1a;
+            background: #fff;
+            padding: 20px;
+        }
+        .invoice-page {
+            max-width: 760px;
+            margin: 0 auto;
+            background: #fff;
+        }
+
+        /* Header */
+        .inv-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #1A3C5E;
+            margin-bottom: 6px;
+        }
+        .inv-header .hotel-name {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1A3C5E;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        .inv-header .hotel-tagline {
+            font-size: 10px;
+            color: #D4AF37;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .inv-header .hotel-address {
+            font-size: 11px;
+            color: #888;
+            margin-top: 6px;
+        }
+        .inv-header .hotel-contact {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Title row */
+        .inv-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0 12px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .inv-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1A3C5E;
+            letter-spacing: 2px;
+        }
+        .inv-number {
+            font-size: 13px;
+            color: #555;
+        }
+        .inv-number strong {
+            color: #1A3C5E;
+            font-size: 14px;
+        }
+        .inv-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-secondary { background: #e2e3e5; color: #383d41; }
+
+        /* Info grid */
+        .inv-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            margin: 16px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .inv-info-block {
+            padding: 12px 16px;
+        }
+        .inv-info-block:first-child {
+            border-right: 1px solid #dee2e6;
+            background: #fafbfc;
+        }
+        .inv-info-block:last-child {
+            background: #fafbfc;
+        }
+        .inv-info-label {
+            font-size: 10px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 3px;
+        }
+        .inv-info-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1A3C5E;
+        }
+        .inv-info-value.sub {
+            font-size: 12px;
+            font-weight: 400;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* Table */
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0;
+            font-size: 12.5px;
+        }
+        .inv-table thead th {
+            background: #1A3C5E;
+            color: #fff;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .inv-table thead th:last-child,
+        .inv-table thead th:nth-last-child(2) {
+            text-align: right;
+        }
+        .inv-table tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eef0f2;
+            vertical-align: top;
+        }
+        .inv-table tbody td:last-child,
+        .inv-table tbody td:nth-last-child(2) {
+            text-align: right;
+        }
+        .inv-table tbody tr:nth-child(even) td {
+            background: #f9fafb;
+        }
+        .inv-table .item-name {
+            font-weight: 600;
+            color: #1A3C5E;
+        }
+        .inv-table .item-sub {
+            font-size: 11px;
+            color: #888;
+            margin-top: 1px;
+        }
+        .inv-table .amount {
+            font-weight: 600;
+            color: #1A3C5E;
+        }
+        .inv-table .amount.negative {
+            color: #c0392b;
+        }
+        .inv-table .service-icon {
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+            color: #2E8B8B;
+        }
+
+        /* Summary */
+        .inv-summary {
+            margin: 0 0 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .inv-summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 16px;
+            border-bottom: 1px solid #eef0f2;
+        }
+        .inv-summary-row:last-child {
+            border-bottom: none;
+        }
+        .inv-summary-row.subtotal {
+            background: #f9fafb;
+        }
+        .inv-summary-row.discount {
+            background: #fff5f5;
+        }
+        .inv-summary-row.total {
+            background: #1A3C5E;
+            padding: 12px 16px;
+        }
+        .inv-summary-label {
+            font-size: 12.5px;
+            color: #555;
+        }
+        .inv-summary-row.discount .inv-summary-label {
+            color: #c0392b;
+        }
+        .inv-summary-row.total .inv-summary-label {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .inv-summary-value {
+            font-weight: 600;
+            color: #1A3C5E;
+        }
+        .inv-summary-row.total .inv-summary-value {
+            color: #D4AF37;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* Payment info */
+        .inv-payment-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0;
+            padding: 12px 16px;
+            background: #f0f7ff;
+            border: 1px solid #cce5ff;
+            border-radius: 6px;
+        }
+        .inv-payment-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .inv-payment-label { color: #555; }
+        .inv-payment-value { font-weight: 600; color: #1A3C5E; }
+
+        /* Footer */
+        .inv-footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .inv-footer .thank-you {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1A3C5E;
+            margin-bottom: 4px;
+        }
+        .inv-footer .hotel-info {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.8;
+        }
+        .inv-footer .divider {
+            color: #D4AF37;
+            letter-spacing: 3px;
+            font-size: 10px;
+            margin: 6px 0;
+        }
+
+        /* Print controls - hidden when printing */
+        .print-controls {
+            text-align: center;
+            margin: 20px 0;
+            padding: 16px;
+            background: #f8f6f0;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+        }
+        .print-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 28px;
+            background: #1A3C5E;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+        .print-btn:hover { background: #2d6a8f; }
+        .print-btn .icon {
+            font-size: 16px;
+        }
+        .close-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: #fff;
+            color: #555;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .close-btn:hover { background: #f0f0f0; }
+
+        /* Print page break */
+        .inv-footer { page-break-after: avoid; }
+
+        @@media print {
+            body { padding: 0; background: #fff; }
+            .print-controls { display: none !important; }
+            .invoice-page { max-width: 100%; padding: 0; }
+            .inv-table thead th { background: #1A3C5E !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .inv-summary-row.total { background: #1A3C5E !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .inv-header { border-bottom-color: #1A3C5E; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Print controls (hidden when printing) -->
+    <div class="print-controls">
+        <button class="print-btn" onclick="window.print()">
+            <span class="icon">&#128438;</span> In hoa don
+        </button>
+        <a href="javascript:history.back()" class="close-btn">
+            <span>&#10005;</span> Dong
+        </a>
+    </div>
+
+    <div class="invoice-page">
+        <!-- Header -->
+        <div class="inv-header">
+            <div class="hotel-name">Sun Hotel</div>
+            <div class="hotel-tagline">Premium Accommodation</div>
+            <div class="hotel-address">123 Nguyen Hue, District 1, Ho Chi Minh City</div>
+            <div class="hotel-contact">Hotline: 1900 1234 &nbsp;|&nbsp; Email: contact@sunhotel.vn</div>
+        </div>
+
+        <!-- Title + Number -->
+        <div class="inv-title-row">
+            <div>
+                <div class="inv-title">INVOICE</div>
+                <div class="inv-number">No. <strong>@Model.InvoiceNumber</strong> &nbsp;|&nbsp; Created: @formatDate(Model.CreatedAt)</div>
+            </div>
+            <span class="inv-status @payBadge">@payText</span>
+        </div>
+
+        <!-- Guest & Room Info -->
+        <div class="inv-info-grid">
+            <div class="inv-info-block">
+                <div class="inv-info-label">Booking Code</div>
+                <div class="inv-info-value">@b?.BookingCode</div>
+                <div class="inv-info-label" style="margin-top:8px;">Guest Name</div>
+                <div class="inv-info-value">@b?.GuestName</div>
+                <div class="inv-info-label" style="margin-top:8px;">Phone</div>
+                <div class="inv-info-value sub">@b?.Phone</div>
+                @if (!string.IsNullOrEmpty(b?.Email))
+                {
+                    <div class="inv-info-label" style="margin-top:6px;">Email</div>
+                    <div class="inv-info-value sub">@b?.Email</div>
+                }
+            </div>
+            <div class="inv-info-block">
+                <div class="inv-info-label">Room</div>
+                <div class="inv-info-value">@(b?.Room?.RoomNumber ?? "—")</div>
+                <div class="inv-info-label" style="margin-top:8px;">Room Type</div>
+                <div class="inv-info-value sub">@(b?.RoomType?.Name ?? "—")</div>
+                <div class="inv-info-label" style="margin-top:8px;">Check-in / Check-out</div>
+                <div class="inv-info-value sub">@b?.CheckInDate.ToString("dd/MM/yyyy") &nbsp;—&nbsp; @b?.CheckOutDate.ToString("dd/MM/yyyy") (@nights night@(nights > 1 ? "s" : ""))</div>
+                <div class="inv-info-label" style="margin-top:6px;">Guests</div>
+                <div class="inv-info-value sub">@b?.NumGuests @(b?.NumGuests == 1 ? "guest" : "guests")</div>
+            </div>
+        </div>
+
+        <!-- Charges Table -->
+        <table class="inv-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th style="text-align:right;">Unit Price</th>
+                    <th style="text-align:right;">Qty</th>
+                    <th style="text-align:right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Room charge -->
+                <tr>
+                    <td>
+                        <div class="item-name">&#127970; &nbsp; Room Charge</div>
+                        <div class="item-sub">@(b?.RoomType?.Name ?? "—") &mdash; @nights night@(nights > 1 ? "s" : "")</div>
+                    </td>
+                    <td class="amount">@formatCurrency((b?.TotalAmount ?? 0) / nights)</td>
+                    <td>@nights</td>
+                    <td class="amount">@formatCurrency(Model.RoomCharge) VND</td>
+                </tr>
+                <!-- Services -->
+                @foreach (var s in services)
+                {
+                    var typeIcon = s.ServiceType switch
+                    {
+                        ServiceType.Breakfast => "&#127858;",
+                        ServiceType.Minibar => "&#129380;",
+                        ServiceType.Laundry => "&#128688;",
+                        ServiceType.Transport => "&#128663;",
+                        _ => "&#128205;"
+                    };
+                    <tr>
+                        <td>
+                            <div class="item-name"><span class="service-icon">@Html.Raw(typeIcon)</span> &nbsp; @s.ServiceName</div>
+                            <div class="item-sub">@s.Quantity x @formatCurrency(s.UnitPrice) VND</div>
+                        </td>
+                        <td class="amount">@formatCurrency(s.UnitPrice)</td>
+                        <td>@s.Quantity</td>
+                        <td class="amount">@formatCurrency(s.TotalAmount) VND</td>
+                    </tr>
+                }
+                @if (!services.Any())
+                {
+                    <tr>
+                        <td colspan="4" style="text-align:center; color:#999; font-style:italic; padding:10px;">No additional services</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Summary -->
+        <div class="inv-summary">
+            <div class="inv-summary-row subtotal">
+                <span class="inv-summary-label">Room Charge</span>
+                <span class="inv-summary-value">@formatCurrency(Model.RoomCharge) VND</span>
+            </div>
+            <div class="inv-summary-row subtotal">
+                <span class="inv-summary-label">Service Charge (@services.Count item@(services.Count != 1 ? "s" : ""))</span>
+                <span class="inv-summary-value">@formatCurrency(servicesTotal) VND</span>
+            </div>
+            @if (Model.Discount > 0)
+            {
+                <div class="inv-summary-row discount">
+                    <span class="inv-summary-label">&#9830; Discount</span>
+                    <span class="inv-summary-value" style="color:#c0392b;">-@formatCurrency(Model.Discount) VND</span>
+                </div>
+            }
+            <div class="inv-summary-row total">
+                <span class="inv-summary-label">TOTAL AMOUNT</span>
+                <span class="inv-summary-value">@formatCurrency(computedTotal) VND</span>
+            </div>
+        </div>
+
+        <!-- Payment Info -->
+        <div class="inv-payment-info">
+            <div class="inv-payment-item">
+                <span class="inv-payment-label">Payment Method</span>
+                <span class="inv-payment-value">@methodText</span>
+            </div>
+            @if (Model.PaymentDate.HasValue)
+            {
+                <div class="inv-payment-item">
+                    <span class="inv-payment-label">Payment Date</span>
+                    <span class="inv-payment-value">@formatDate(Model.PaymentDate.Value)</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.SePayTransactionId))
+            {
+                <div class="inv-payment-item">
+                    <span class="inv-payment-label">Transaction ID</span>
+                    <span class="inv-payment-value" style="font-size:11px;">@Model.SePayTransactionId</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.MomoTransId))
+            {
+                <div class="inv-payment-item">
+                    <span class="inv-payment-label">MoMo Trans ID</span>
+                    <span class="inv-payment-value" style="font-size:11px;">@Model.MomoTransId</span>
+                </div>
+            }
+        </div>
+
+        <!-- Footer -->
+        <div class="inv-footer">
+            <div class="thank-you">Thank you for choosing Sun Hotel!</div>
+            <div class="divider">&#9670; &#9670; &#9670;</div>
+            <div class="hotel-info">
+                Sun Hotel &bull; 123 Nguyen Hue, District 1, Ho Chi Minh City<br>
+                Hotline: 1900 1234 &bull; Email: contact@sunhotel.vn &bull; Website: www.sunhotel.vn<br>
+                <em style="font-size:10px; color:#aaa;">This invoice was generated automatically. Thank you for your trust.</em>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

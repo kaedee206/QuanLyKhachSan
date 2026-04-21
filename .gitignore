@@ -1,0 +1,56 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+*.sln.docstates
+
+## Build outputs
+publish/
+out/
+
+## Logs
+logs/
+*.log
+
+## Sensitive config files - DO NOT COMMIT
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+## Test / Dev files with credentials
+test_accounts.txt
+
+## Environment files
+.env
+.env.*
+!.env.example
+
+## Docker
+docker-compose.override.yml
+
+## OS
+.DS_Store
+Thumbs.db
+
+## NuGet
+*.nupkg
+*.nuspec
+project.lock.json
+packages/
+
+## Rider / JetBrains
+.idea/
+*.iml
+
+## VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+## Kilo / editor
+.kilo/

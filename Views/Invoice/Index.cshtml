@@ -1,0 +1,121 @@
+@model PaginatedList<Invoice>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý Hóa đơn";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-receipt me-2" style="color: #D4AF37;"></i>
+            Quản lý Hóa đơn
+        </h4>
+        <small class="text-muted">Tổng cộng @Model.TotalCount hóa đơn</small>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Số hóa đơn</th>
+                        <th class="border-0 py-2">Mã booking</th>
+                        <th class="border-0 py-2 text-end">Tiền phòng</th>
+                        <th class="border-0 py-2 text-end">Dịch vụ</th>
+                        <th class="border-0 py-2 text-end">Giảm giá</th>
+                        <th class="border-0 py-2 text-end">Tổng cộng</th>
+                        <th class="border-0 py-2">Trạng thái</th>
+                        <th class="border-0 py-2">Thanh toán</th>
+                        <th class="border-0 py-2">Ngày tạo</th>
+                        <th class="border-0 py-2 text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inv in Model.Items)
+                    {
+                        var payBadge = inv.PaymentStatus switch
+                        {
+                            PaymentStatus.Unpaid => "bg-danger",
+                            PaymentStatus.Pending => "bg-warning text-dark",
+                            PaymentStatus.Paid => "bg-success",
+                            PaymentStatus.Refunded => "bg-info",
+                            _ => "bg-secondary"
+                        };
+                        var payText = inv.PaymentStatus switch
+                        {
+                            PaymentStatus.Unpaid => "Chưa TT",
+                            PaymentStatus.Pending => "Đang chờ",
+                            PaymentStatus.Paid => "Đã TT",
+                            PaymentStatus.Refunded => "Đã hoàn",
+                            _ => inv.PaymentStatus.ToString()
+                        };
+                        var methodText = inv.PaymentMethod switch
+                        {
+                            PaymentMethod.Cash => "Tiền mặt",
+                            PaymentMethod.Transfer => "Chuyển khoản",
+                            PaymentMethod.VietQR => "VietQR",
+                            PaymentMethod.Card => "Thẻ",
+                            _ => inv.PaymentMethod.ToString()
+                        };
+                        <tr>
+                            <td class="px-4">
+                                <a asp-action="Detail" asp-route-id="@inv.InvoiceNumber" style="color: #1A3C5E; font-weight: 600; text-decoration: none;">@inv.InvoiceNumber</a>
+                            </td>
+                            <td>
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@inv.BookingId" style="color: #2E8B8B; text-decoration: none;">@inv.Booking?.BookingCode</a>
+                            </td>
+                            <td class="text-end">@inv.RoomCharge.ToString("N0") VNĐ</td>
+                            <td class="text-end">@inv.ServiceCharge.ToString("N0") VNĐ</td>
+                            <td class="text-end">@inv.Discount.ToString("N0") VNĐ</td>
+                            <td class="text-end fw-bold" style="color: #D4AF37;">@inv.TotalAmount.ToString("N0") VNĐ</td>
+                            <td><span class="badge @payBadge" style="font-size: 0.72rem;">@payText</span></td>
+                            <td style="font-size: 0.8rem;">@methodText</td>
+                            <td>@inv.CreatedAt.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Detail" asp-route-id="@inv.InvoiceNumber" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; border-radius: 6px;" title="Chi tiet">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <div class="mt-2">Chưa có hóa đơn nào</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAGINATION ═══ -->
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3 d-flex justify-content-center">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Page="@(Model.Page - 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-Page="@i" style="border-radius: 6px; margin: 0 2px; @(i == Model.Page ? "background: #1A3C5E; border-color: #1A3C5E;" : "")">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Page="@(Model.Page + 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

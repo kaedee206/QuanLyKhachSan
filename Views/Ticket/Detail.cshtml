@@ -1,0 +1,179 @@
+@model Ticket
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Ticket #" + Model.TicketNumber;
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+
+    var priorityBadge = Model.Priority switch
+    {
+        TicketPriority.Low => "bg-secondary",
+        TicketPriority.Medium => "bg-info text-dark",
+        TicketPriority.High => "bg-warning text-dark",
+        TicketPriority.Urgent => "bg-danger",
+        _ => "bg-secondary"
+    };
+    var priorityText = Model.Priority switch
+    {
+        TicketPriority.Low => "Thấp",
+        TicketPriority.Medium => "Trung bình",
+        TicketPriority.High => "Cao",
+        TicketPriority.Urgent => "Khẩn cấp",
+        _ => Model.Priority.ToString()
+    };
+    var statusBadge = Model.Status switch
+    {
+        TicketStatus.Open => "bg-danger",
+        TicketStatus.InProgress => "bg-warning text-dark",
+        TicketStatus.Resolved => "bg-success",
+        TicketStatus.Closed => "bg-secondary",
+        _ => "bg-secondary"
+    };
+    var statusText = Model.Status switch
+    {
+        TicketStatus.Open => "Mở",
+        TicketStatus.InProgress => "Đang xử lý",
+        TicketStatus.Resolved => "Đã giải quyết",
+        TicketStatus.Closed => "Đã đóng",
+        _ => Model.Status.ToString()
+    };
+    var typeText = Model.Type switch
+    {
+        TicketType.Maintenance => "Bảo trì",
+        TicketType.Housekeeping => "Dọn phòng",
+        TicketType.Service => "Dịch vụ",
+        TicketType.Other => "Khác",
+        _ => Model.Type.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-wrench me-2" style="color: #D4AF37;"></i>
+            Ticket #@Model.TicketNumber
+        </h4>
+        <small class="text-muted">Tạo lúc @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+        <i class="bi bi-arrow-left"></i> Danh sách
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- ═══ TICKET INFO ═══ -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Thông tin ticket</h6>
+                <div class="d-flex gap-2">
+                    <span class="badge @priorityBadge">@priorityText</span>
+                    <span class="badge @statusBadge">@statusText</span>
+                </div>
+            </div>
+            <div class="card-body px-4" style="font-size: 0.88rem;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span class="text-muted">Phòng:</span>
+                            <div class="fw-bold" style="color: #1A3C5E;">@Model.Room?.RoomNumber — Tầng @Model.Room?.Floor</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Loại ticket:</span>
+                            <div>@typeText</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Người báo cáo:</span>
+                            <div>@Model.Reporter?.FullName</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span class="text-muted">Người xử lý:</span>
+                            <div>@(Model.Assignee?.FullName ?? "<em>Chưa phân công</em>")</div>
+                        </div>
+                        @if (Model.ResolvedAt.HasValue)
+                        {
+                            <div class="mb-3">
+                                <span class="text-muted">Ngày giải quyết:</span>
+                                <div>@Model.ResolvedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        }
+                        @if (Model.ClosedAt.HasValue)
+                        {
+                            <div class="mb-3">
+                                <span class="text-muted">Ngày đóng:</span>
+                                <div>@Model.ClosedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mt-2 p-3" style="background: #f8f6f0; border-radius: 8px;">
+                    <small class="text-muted d-block mb-1">Mô tả:</small>
+                    <div style="white-space: pre-wrap;">@Model.Description</div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <div class="mt-3">
+                        <small class="text-muted d-block mb-1">Hình ảnh:</small>
+                        <img src="@Model.ImageUrl" alt="Ticket image" class="rounded" style="max-width: 100%; max-height: 300px;" />
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ResolutionNotes))
+                {
+                    <div class="mt-3 p-3" style="background: rgba(40,167,69,0.1); border-radius: 8px; border-left: 4px solid #28a745;">
+                        <small class="text-muted d-block mb-1"><i class="bi bi-check-circle text-success"></i> Ghi chú xử lý:</small>
+                        <div style="white-space: pre-wrap;">@Model.ResolutionNotes</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ UPDATE FORM ═══ -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 px-4" style="border-radius: 12px 12px 0 0;">
+                <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Cập nhật ticket</h6>
+            </div>
+            <div class="card-body px-4">
+                <form asp-action="Update" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Trạng thái</label>
+                        <select name="Status" class="form-select" style="border-radius: 8px;">
+                            <option value="">-- Không thay đổi --</option>
+                            <option value="@TicketStatus.Open" selected="@(Model.Status == TicketStatus.Open)">Mở</option>
+                            <option value="@TicketStatus.InProgress" selected="@(Model.Status == TicketStatus.InProgress)">Đang xử lý</option>
+                            <option value="@TicketStatus.Resolved" selected="@(Model.Status == TicketStatus.Resolved)">Đã giải quyết</option>
+                            <option value="@TicketStatus.Closed" selected="@(Model.Status == TicketStatus.Closed)">Đã đóng</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Phân công cho</label>
+                        <select name="AssignedToId" class="form-select" style="border-radius: 8px;">
+                            <option value="">-- Không thay đổi --</option>
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.Id" selected="@(Model.AssignedToId == user.Id)">@user.FullName (@user.Role)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Ghi chú xử lý</label>
+                        <textarea name="ResolutionNotes" class="form-control" rows="4" style="border-radius: 8px;" placeholder="Ghi chú về cách xử lý...">@Model.ResolutionNotes</textarea>
+                    </div>
+
+                    <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px;">
+                        <i class="bi bi-save"></i> Cập nhật
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

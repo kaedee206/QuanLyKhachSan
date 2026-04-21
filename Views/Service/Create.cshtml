@@ -1,0 +1,83 @@
+@model AddServiceViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Thêm Dịch vụ";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-plus-circle me-2" style="color: #D4AF37;"></i>
+            Thêm Dịch vụ
+        </h4>
+        <small class="text-muted">Thêm dịch vụ cho khách đang ở</small>
+    </div>
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="BookingCode" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="BookingCode" class="form-control" style="border-radius: 8px;" placeholder="VD: BK001" />
+                            <span asp-validation-for="BookingCode" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ServiceType" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <select asp-for="ServiceType" class="form-select" style="border-radius: 8px;">
+                                <option value="@ServiceType.Laundry">Giặt ủi</option>
+                                <option value="@ServiceType.Minibar">Minibar</option>
+                                <option value="@ServiceType.Breakfast">Ăn sáng</option>
+                                <option value="@ServiceType.Transport">Vận chuyển</option>
+                                <option value="@ServiceType.Extra">Phụ thu</option>
+                            </select>
+                            <span asp-validation-for="ServiceType" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="ServiceName" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="ServiceName" class="form-control" style="border-radius: 8px;" placeholder="VD: Giặt áo sơ mi, Nước suối minibar..." />
+                            <span asp-validation-for="ServiceName" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Quantity" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <input asp-for="Quantity" type="number" min="1" max="100" class="form-control" style="border-radius: 8px;" />
+                            <span asp-validation-for="Quantity" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="UnitPrice" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <div class="input-group">
+                                <input asp-for="UnitPrice" type="number" min="0" step="1000" class="form-control" style="border-radius: 8px 0 0 8px;" />
+                                <span class="input-group-text" style="border-radius: 0 8px 8px 0; background: #f8f6f0; font-size: 0.85rem;">VNĐ</span>
+                            </div>
+                            <span asp-validation-for="UnitPrice" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Notes" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
+                            <textarea asp-for="Notes" class="form-control" rows="2" style="border-radius: 8px;" placeholder="Ghi chú thêm (nếu có)..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger" style="font-size: 0.78rem;"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px; padding: 10px 30px;">
+                            <i class="bi bi-check-lg"></i> Thêm dịch vụ
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px; padding: 10px 30px;">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

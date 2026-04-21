@@ -1,0 +1,126 @@
+@{
+    Layout = "_Layout";
+    ViewData["Layout"] = "Admin";
+    IgnoreSection("Scripts");
+}
+
+<div class="d-flex" style="min-height: 100vh;">
+    <!-- SIDEBAR -->
+    <nav style="width: 260px; min-height: 100vh; background: linear-gradient(180deg, #0F2540 0%, #1A3C5E 100%); padding: 1.5rem 0; flex-shrink: 0;">
+        <div class="px-3 mb-4">
+            <a asp-controller="Admin" asp-action="Index" class="d-flex align-items-center gap-2 text-decoration-none">
+                <span style="background: linear-gradient(135deg, #D4AF37, #F0D060); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                    <i class="bi bi-sun"></i>
+                </span>
+                <div>
+                    <div style="color: white; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.1rem;">Sun Hotel</div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">Management System</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="px-3 mb-3">
+            <div style="background: rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px;">
+                <div style="color: white; font-size: 0.85rem; font-weight: 600;">
+                    <i class="bi bi-person-circle me-1" style="color: #D4AF37;"></i>
+                    @User.FindFirst("FullName")?.Value
+                </div>
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+            </div>
+        </div>
+
+        <div class="nav flex-column px-2">
+            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Receptionist"))
+            {
+                <a asp-controller="Admin" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a asp-controller="Booking" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-calendar-check"></i> Booking
+                </a>
+                <a asp-controller="Booking" asp-action="CheckIn" class="nav-link sidebar-link">
+                    <i class="bi bi-box-arrow-in-right"></i> Check-in
+                </a>
+                <a asp-controller="Booking" asp-action="CheckOut" class="nav-link sidebar-link">
+                    <i class="bi bi-box-arrow-right"></i> Check-out
+                </a>
+                <a asp-controller="Room" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-building"></i> Phòng
+                </a>
+                <a asp-controller="Service" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-concierge-bell"></i> Dịch vụ
+                </a>
+                <a asp-controller="Invoice" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-receipt"></i> Hóa đơn
+                </a>
+            }
+
+            @if (User.IsInRole("Admin") || User.IsInRole("Housekeeping"))
+            {
+                <a asp-controller="Room" asp-action="Cleaning" class="nav-link sidebar-link">
+                    <i class="bi bi-droplet"></i> Dọn phòng
+                </a>
+            }
+
+            <a asp-controller="Ticket" asp-action="Index" class="nav-link sidebar-link">
+                <i class="bi bi-wrench"></i> Ticket
+            </a>
+
+            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                <a asp-controller="Report" asp-action="Revenue" class="nav-link sidebar-link">
+                    <i class="bi bi-graph-up"></i> Báo cáo
+                </a>
+            }
+
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="User" asp-action="Index" class="nav-link sidebar-link">
+                    <i class="bi bi-people"></i> Người dùng
+                </a>
+            }
+
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;" />
+
+            <a asp-controller="Auth" asp-action="ChangePassword" class="nav-link sidebar-link">
+                <i class="bi bi-key"></i> Đổi mật khẩu
+            </a>
+            <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="nav-link sidebar-link border-0 bg-transparent w-100 text-start" style="color: rgba(255,255,255,0.7);">
+                    <i class="bi bi-box-arrow-left"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-grow-1" style="background: #F5F0E8; overflow-y: auto;">
+        <div class="p-4">
+            @RenderBody()
+        </div>
+    </div>
+</div>
+
+<style>
+    .sidebar-link {
+        color: rgba(255,255,255,0.7) !important;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 2px;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sidebar-link:hover {
+        background: rgba(255,255,255,0.1) !important;
+        color: white !important;
+    }
+    .sidebar-link i {
+        width: 20px;
+        text-align: center;
+        color: #D4AF37;
+    }
+</style>

@@ -1,0 +1,582 @@
+@{
+    ViewData["Title"] = "Sun Hotel - Khách sạn 4 sao";
+    var roomTypes = ViewBag.RoomTypes as List<RoomType> ?? new List<RoomType>();
+}
+
+@section Styles {
+<style>
+    /* ═══ FONTS & VARIABLES ═══ */
+    :root {
+        --gold: #D4AF37;
+        --gold-light: #F0D060;
+        --navy: #0F2540;
+        --navy-mid: #1A3C5E;
+        --teal: #2E8B8B;
+        --ivory: #F5F0E8;
+    }
+
+    /* ═══ HERO SECTION ═══ */
+    .hero-section {
+        background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 40%, rgba(15,37,64,0.85) 100%);
+        padding: 5rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 55%;
+        background: url('/images/hotel-assets/hero/hero-banner.png') right center no-repeat;
+        background-size: cover;
+        opacity: 0.2;
+    }
+    .hero-section::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(46,139,139,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(212,175,55,0.15);
+        border: 1px solid rgba(212,175,55,0.3);
+        color: var(--gold-light);
+        padding: 6px 16px;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+    }
+    .hero-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 3.2rem;
+        font-weight: 800;
+        color: white;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+    .hero-title span {
+        background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .hero-subtitle {
+        color: rgba(255,255,255,0.75);
+        font-size: 1.1rem;
+        line-height: 1.7;
+        max-width: 540px;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        color: var(--navy);
+        font-weight: 600;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 28px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+    .btn-gold:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(212,175,55,0.35);
+        color: var(--navy);
+    }
+    .btn-outline-gold {
+        border: 2px solid rgba(212,175,55,0.5);
+        color: var(--gold-light);
+        background: transparent;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 10px 28px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+    .btn-outline-gold:hover {
+        background: rgba(212,175,55,0.1);
+        border-color: var(--gold);
+        color: var(--gold-light);
+    }
+
+    /* ═══ SEARCH BAR ═══ */
+    .search-section {
+        margin-top: -2.5rem;
+        position: relative;
+        z-index: 10;
+    }
+    .search-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 10px 40px rgba(15,37,64,0.12);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .search-card .form-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--navy);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .search-card .form-control, .search-card .form-select {
+        border: 1px solid #e0d8cc;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    .search-card .form-control:focus, .search-card .form-select:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+    }
+
+    /* ═══ ROOM TYPES ═══ */
+    .section-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 2rem;
+        color: var(--navy);
+    }
+    .section-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .hotel-room-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        height: 100%;
+    }
+    .hotel-room-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+    }
+    .hotel-room-card-img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        background: linear-gradient(135deg, var(--navy-mid), var(--teal));
+        display: block;
+    }
+    .hotel-room-card-body {
+        padding: 1.25rem;
+    }
+    .hotel-room-card-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: var(--navy);
+        margin-bottom: 0.4rem;
+    }
+    .hotel-room-card-desc {
+        color: #6b7280;
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .hotel-room-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+    .hotel-room-card-price {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--gold);
+    }
+    .hotel-room-card-price small {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: #6b7280;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* ═══ AMENITIES ═══ */
+    .amenities-section {
+        background: var(--ivory);
+    }
+    .amenity-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s;
+        height: 100%;
+    }
+    .amenity-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+    .amenity-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.4rem;
+    }
+    .amenity-name {
+        font-weight: 600;
+        color: var(--navy);
+        font-size: 0.95rem;
+        margin-bottom: 0.3rem;
+    }
+    .amenity-desc {
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+
+    /* ═══ STATS ═══ */
+    .stats-section {
+        background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    }
+    .stat-item {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+    .stat-number {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .stat-label {
+        color: rgba(255,255,255,0.7);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    /* ═══ CTA ═══ */
+    .cta-section {
+        background: linear-gradient(135deg, var(--teal), var(--navy-mid));
+        position: relative;
+        overflow: hidden;
+    }
+    .cta-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+</style>
+}
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- HERO SECTION -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="hero-section">
+    <div class="container position-relative" style="z-index: 2;">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="hero-badge">
+                    <i class="bi bi-star-fill"></i> Khách sạn 4 sao
+                </div>
+                <h1 class="hero-title">
+                    Chào mừng đến<br /><span>Sun Hotel</span>
+                </h1>
+                <p class="hero-subtitle mb-4">
+                    Trải nghiệm sự sang trọng và tiện nghi đẳng cấp tại trung tâm thành phố.
+                    Dịch vụ hoàn hảo, không gian thoải mái cho mọi chuyến đi.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a asp-controller="Booking" asp-action="Create" class="btn-gold">
+                        <i class="bi bi-calendar-plus me-2"></i>Đặt phòng
+                    </a>
+                    <a asp-controller="Booking" asp-action="Lookup" class="btn-outline-gold">
+                        <i class="bi bi-search me-2"></i>Tra cứu booking
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+                <img src="/images/hotel-assets/hero/hero-banner.png" alt="Sun Hotel Exterior" style="max-width: 420px; width: 100%; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SEARCH BAR -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="search-section">
+    <div class="container">
+        <div class="search-card">
+            <form asp-controller="Room" asp-action="Listing" method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Ngày nhận phòng</label>
+                        <input type="date" name="CheckInDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ngày trả phòng</label>
+                        <input type="date" name="CheckOutDate" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Loại phòng</label>
+                        <select name="RoomTypeId" class="form-select">
+                            <option value="">Tất cả</option>
+                            @foreach (var rt in roomTypes)
+                            {
+                                <option value="@rt.Id">@rt.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Số khách</label>
+                        <select name="NumGuests" class="form-select">
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <option value="@i">@i khách</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-gold w-100">
+                            <i class="bi bi-search me-1"></i> Tìm phòng
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ROOM TYPES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section style="padding: 5rem 0 4rem; background: white;">
+    <div class="container">
+        <div class="text-center mb-5">
+            <p style="color: var(--gold); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                <i class="bi bi-building me-1"></i> Hạng phòng
+            </p>
+            <h2 class="section-title">Phòng nghỉ sang trọng</h2>
+            <p class="section-subtitle mt-2">Đa dạng lựa chọn phòng từ tiêu chuẩn đến hạng sang, đáp ứng mọi nhu cầu</p>
+        </div>
+
+        @if (roomTypes.Any())
+        {
+            <div class="row g-4">
+                @foreach (var rt in roomTypes)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="hotel-room-card">
+                            @if (!string.IsNullOrEmpty(rt.ImageUrl))
+                            {
+                                <img src="@rt.ImageUrl" alt="@rt.Name" class="hotel-room-card-img" />
+                            }
+                            else
+                            {
+                                <div class="hotel-room-card-img d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-building" style="font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
+                                </div>
+                            }
+                            <div class="hotel-room-card-body">
+                                <h5 class="hotel-room-card-name">@rt.Name</h5>
+                                <p class="hotel-room-card-desc">@(rt.Description ?? "Phòng nghỉ tiện nghi, đầy đủ tiện ích hiện đại")</p>
+                                <div class="hotel-room-card-meta">
+                                    <span><i class="bi bi-people me-1"></i> Tối đa @rt.MaxGuests khách</span>
+                                    <span><i class="bi bi-door-open me-1"></i> @rt.Rooms.Count(r => r.Status == RoomStatus.Available) phòng trống</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="hotel-room-card-price">
+                                        @rt.BasePrice.ToString("N0")₫ <small>/đêm</small>
+                                    </div>
+                                    <a asp-controller="Booking" asp-action="Create" asp-route-roomTypeId="@rt.Id" class="btn btn-sm btn-gold">
+                                        Đặt ngay
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-building" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="text-muted mt-2">Đang cập nhật thông tin phòng...</p>
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <a asp-controller="Room" asp-action="Listing" class="btn btn-outline-dark" style="border-radius: 12px; padding: 10px 28px; border-color: var(--navy); color: var(--navy);">
+                Xem tất cả phòng <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- AMENITIES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="amenities-section" style="padding: 5rem 0;">
+    <div class="container">
+        <div class="text-center mb-5">
+            <p style="color: var(--gold); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                <i class="bi bi-gem me-1"></i> Tiện nghi
+            </p>
+            <h2 class="section-title">Dịch vụ đẳng cấp</h2>
+            <p class="section-subtitle mt-2">Mọi thứ bạn cần cho kỳ nghỉ hoàn hảo</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- WiFi -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/amenities/gym.png" alt="WiFi" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(46,139,139,0.1); color: var(--teal); display:none;">
+                        <i class="bi bi-wifi"></i>
+                    </div>
+                    <div class="amenity-name">WiFi</div>
+                    <div class="amenity-desc">Tốc độ cao miễn phí</div>
+                </div>
+            </div>
+            <!-- Ăn sáng -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/services/breakfast-buffet.png" alt="Ăn sáng" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(212,175,55,0.1); color: var(--gold); display:none;">
+                        <i class="bi bi-cup-hot"></i>
+                    </div>
+                    <div class="amenity-name">Ăn sáng</div>
+                    <div class="amenity-desc">Buffet đa dạng</div>
+                </div>
+            </div>
+            <!-- Đưa đón -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/services/airport-shuttle.png" alt="Đưa đón" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(26,60,94,0.1); color: var(--navy-mid); display:none;">
+                        <i class="bi bi-car-front"></i>
+                    </div>
+                    <div class="amenity-name">Đưa đón</div>
+                    <div class="amenity-desc">Sân bay & ga tàu</div>
+                </div>
+            </div>
+            <!-- Hồ bơi -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/amenities/pool.png" alt="Hồ bơi" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(46,139,139,0.1); color: var(--teal); display:none;">
+                        <i class="bi bi-water"></i>
+                    </div>
+                    <div class="amenity-name">Hồ bơi</div>
+                    <div class="amenity-desc">Ngoài trời thư giãn</div>
+                </div>
+            </div>
+            <!-- Spa -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/amenities/spa.png" alt="Spa" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(212,175,55,0.1); color: var(--gold); display:none;">
+                        <i class="bi bi-flower1"></i>
+                    </div>
+                    <div class="amenity-name">Spa</div>
+                    <div class="amenity-desc">Thư giãn cao cấp</div>
+                </div>
+            </div>
+            <!-- Gym -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="amenity-card">
+                    <img src="/images/hotel-assets/amenities/gym.png" alt="Gym" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="amenity-icon" style="background: rgba(26,60,94,0.1); color: var(--navy-mid); display:none;">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <div class="amenity-name">Gym</div>
+                    <div class="amenity-desc">Phòng gym hiện đại</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- STATS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="stats-section" style="padding: 3.5rem 0;">
+    <div class="container">
+        <div class="row">
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">20+</div>
+                    <div class="stat-label">Phòng nghỉ</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">5000+</div>
+                    <div class="stat-label">Khách hàng</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">4.8/5</div>
+                    <div class="stat-label">Đánh giá</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Hỗ trợ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CTA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="cta-section" style="padding: 5rem 0;">
+    <div class="container text-center position-relative" style="z-index: 2;">
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: white; margin-bottom: 1rem;">
+            Bắt đầu chuyến đi của bạn
+        </h2>
+        <p style="color: rgba(255,255,255,0.8); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem;">
+            Đặt phòng ngay hôm nay để nhận ưu đãi đặc biệt và trải nghiệm dịch vụ 4 sao
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-controller="Booking" asp-action="Create" class="btn-gold" style="font-size: 1.05rem; padding: 14px 36px;">
+                <i class="bi bi-calendar-plus me-2"></i>Đặt phòng ngay
+            </a>
+            <a asp-controller="Room" asp-action="Listing" class="btn-outline-gold" style="font-size: 1.05rem; padding: 12px 36px;">
+                <i class="bi bi-grid me-2"></i>Xem phòng
+            </a>
+        </div>
+    </div>
+</section>

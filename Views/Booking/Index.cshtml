@@ -1,0 +1,154 @@
+@model PaginatedList<Booking>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý Booking";
+    var filter = ViewBag.Filter as BookingFilterViewModel ?? new BookingFilterViewModel();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Quản lý Booking</h4>
+        <small class="text-muted">Tổng cộng @Model.TotalCount booking</small>
+    </div>
+    <a asp-action="AdminCreate" class="btn btn-sm" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600;">
+        <i class="bi bi-plus-lg"></i> Tạo booking
+    </a>
+</div>
+
+<!-- ═══ FILTER BAR ═══ -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body py-3 px-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Tìm kiếm</label>
+                <input type="text" name="Search" value="@filter.Search" class="form-control form-control-sm" placeholder="Mã booking, tên khách, SĐT..." style="border-radius: 8px;" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Trạng thái</label>
+                <select name="Status" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <option value="">Tất cả</option>
+                    <option value="@BookingStatus.Pending" selected="@(filter.Status == BookingStatus.Pending)">Chờ xác nhận</option>
+                    <option value="@BookingStatus.Confirmed" selected="@(filter.Status == BookingStatus.Confirmed)">Đã xác nhận</option>
+                    <option value="@BookingStatus.CheckedIn" selected="@(filter.Status == BookingStatus.CheckedIn)">Đã nhận phòng</option>
+                    <option value="@BookingStatus.CheckedOut" selected="@(filter.Status == BookingStatus.CheckedOut)">Đã trả phòng</option>
+                    <option value="@BookingStatus.Cancelled" selected="@(filter.Status == BookingStatus.Cancelled)">Đã hủy</option>
+                    <option value="@BookingStatus.NoShow" selected="@(filter.Status == BookingStatus.NoShow)">Không đến</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Từ ngày</label>
+                <input type="date" name="FromDate" value="@filter.FromDate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="border-radius: 8px;" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Đến ngày</label>
+                <input type="date" name="ToDate" value="@filter.ToDate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="border-radius: 8px;" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm" style="background: #1A3C5E; color: white; border-radius: 8px;">
+                    <i class="bi bi-search"></i> Lọc
+                </button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px;">
+                    <i class="bi bi-x-lg"></i> Xóa lọc
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ BOOKINGS TABLE ═══ -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+                <thead style="background: #f8f6f0;">
+                    <tr>
+                        <th class="border-0 px-4 py-2">Mã booking</th>
+                        <th class="border-0 py-2">Tên khách</th>
+                        <th class="border-0 py-2">Loại phòng</th>
+                        <th class="border-0 py-2">Nhận phòng</th>
+                        <th class="border-0 py-2">Trả phòng</th>
+                        <th class="border-0 py-2">Trạng thái</th>
+                        <th class="border-0 py-2 text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.Items)
+                    {
+                        var badgeClass = b.Status switch
+                        {
+                            BookingStatus.Pending => "bg-warning text-dark",
+                            BookingStatus.Confirmed => "bg-info text-dark",
+                            BookingStatus.CheckedIn => "bg-success",
+                            BookingStatus.CheckedOut => "bg-secondary",
+                            BookingStatus.Cancelled => "bg-danger",
+                            BookingStatus.NoShow => "bg-dark",
+                            _ => "bg-secondary"
+                        };
+                        var statusText = b.Status switch
+                        {
+                            BookingStatus.Pending => "Chờ xác nhận",
+                            BookingStatus.Confirmed => "Đã xác nhận",
+                            BookingStatus.CheckedIn => "Đã nhận phòng",
+                            BookingStatus.CheckedOut => "Đã trả phòng",
+                            BookingStatus.Cancelled => "Đã hủy",
+                            BookingStatus.NoShow => "Không đến",
+                            _ => b.Status.ToString()
+                        };
+                        <tr>
+                            <td class="px-4">
+                                <a asp-action="Detail" asp-route-id="@b.Id" style="color: #1A3C5E; font-weight: 600; text-decoration: none;">@b.BookingCode</a>
+                            </td>
+                            <td>
+                                <div>@b.GuestName</div>
+                                <small class="text-muted">@b.Phone</small>
+                            </td>
+                            <td>@b.RoomType?.Name</td>
+                            <td>@b.CheckInDate.ToString("dd/MM/yyyy")</td>
+                            <td>@b.CheckOutDate.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @badgeClass" style="font-size: 0.72rem;">@statusText</span></td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Detail" asp-route-id="@b.Id" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; border-radius: 6px;" title="Chi tiết">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <div class="mt-2">Không tìm thấy booking nào</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAGINATION ═══ -->
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3 d-flex justify-content-center">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.HasPrevious ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Search="@filter.Search" asp-route-Status="@filter.Status" asp-route-FromDate="@filter.FromDate" asp-route-ToDate="@filter.ToDate" asp-route-Page="@(Model.Page - 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-Search="@filter.Search" asp-route-Status="@filter.Status" asp-route-FromDate="@filter.FromDate" asp-route-ToDate="@filter.ToDate" asp-route-Page="@i" style="border-radius: 6px; margin: 0 2px; @(i == Model.Page ? "background: #1A3C5E; border-color: #1A3C5E;" : "")">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-Search="@filter.Search" asp-route-Status="@filter.Status" asp-route-FromDate="@filter.FromDate" asp-route-ToDate="@filter.ToDate" asp-route-Page="@(Model.Page + 1)" style="border-radius: 6px; margin: 0 2px;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

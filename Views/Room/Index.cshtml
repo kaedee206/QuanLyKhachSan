@@ -1,0 +1,123 @@
+@model RoomGridViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý Phòng";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-building me-2" style="color: #D4AF37;"></i>
+            Sơ đồ Phòng
+        </h4>
+        <small class="text-muted">Quản lý trạng thái phòng theo tầng</small>
+    </div>
+</div>
+
+<!-- ═══ SUMMARY STATS BAR ═══ -->
+<div class="row g-3 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius: 12px;">
+            <div style="font-size: 1.8rem; font-weight: 700; color: #1A3C5E;">@Model.Summary.Total</div>
+            <div class="text-muted" style="font-size: 0.78rem;">Tổng phòng</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius: 12px; border-bottom: 3px solid #28a745;">
+            <div style="font-size: 1.8rem; font-weight: 700; color: #28a745;">@Model.Summary.Available</div>
+            <div class="text-muted" style="font-size: 0.78rem;">Trống</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius: 12px; border-bottom: 3px solid #dc3545;">
+            <div style="font-size: 1.8rem; font-weight: 700; color: #dc3545;">@Model.Summary.Occupied</div>
+            <div class="text-muted" style="font-size: 0.78rem;">Có khách</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius: 12px; border-bottom: 3px solid #ffc107;">
+            <div style="font-size: 1.8rem; font-weight: 700; color: #ffc107;">@Model.Summary.Cleaning</div>
+            <div class="text-muted" style="font-size: 0.78rem;">Đang dọn</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-radius: 12px; border-bottom: 3px solid #6c757d;">
+            <div style="font-size: 1.8rem; font-weight: 700; color: #6c757d;">@Model.Summary.Maintenance</div>
+            <div class="text-muted" style="font-size: 0.78rem;">Bảo trì</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ STATUS LEGEND ═══ -->
+<div class="d-flex gap-4 mb-4" style="font-size: 0.82rem;">
+    <span><span class="d-inline-block rounded-circle" style="width: 14px; height: 14px; background: #28a745; vertical-align: middle;"></span> Trống (Available)</span>
+    <span><span class="d-inline-block rounded-circle" style="width: 14px; height: 14px; background: #dc3545; vertical-align: middle;"></span> Có khách (Occupied)</span>
+    <span><span class="d-inline-block rounded-circle" style="width: 14px; height: 14px; background: #ffc107; vertical-align: middle;"></span> Đang dọn (Cleaning)</span>
+    <span><span class="d-inline-block rounded-circle" style="width: 14px; height: 14px; background: #6c757d; vertical-align: middle;"></span> Bảo trì (Maintenance)</span>
+</div>
+
+<!-- ═══ FLOOR-BY-FLOOR ROOM GRID ═══ -->
+@foreach (var floor in Model.Floors.OrderBy(f => f.Floor))
+{
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+            <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+                <i class="bi bi-layers me-2" style="color: #D4AF37;"></i>Tầng @floor.Floor
+            </h6>
+            <small class="text-muted">
+                <span class="text-success">@floor.Summary.Available trống</span> |
+                <span class="text-danger">@floor.Summary.Occupied có khách</span> |
+                <span style="color: #ffc107;">@floor.Summary.Cleaning dọn</span> |
+                <span class="text-secondary">@floor.Summary.Maintenance bảo trì</span>
+            </small>
+        </div>
+        <div class="card-body px-4">
+            <div class="d-flex flex-wrap gap-3">
+                @foreach (var room in floor.Rooms)
+                {
+                    var bgColor = room.Status switch
+                    {
+                        RoomStatus.Available => "#28a745",
+                        RoomStatus.Occupied => "#dc3545",
+                        RoomStatus.Cleaning => "#ffc107",
+                        RoomStatus.Maintenance => "#6c757d",
+                        _ => "#adb5bd"
+                    };
+                    var textColor = room.Status == RoomStatus.Cleaning ? "#1A3C5E" : "white";
+
+                    <div class="position-relative" style="width: 130px;">
+                        <div class="card border-0 text-center p-2" style="background: @bgColor; color: @textColor; border-radius: 10px; cursor: pointer; min-height: 95px;" data-bs-toggle="collapse" data-bs-target="#room-@room.Id">
+                            <div style="font-size: 1.1rem; font-weight: 700;">@room.RoomNumber</div>
+                            <div style="font-size: 0.7rem; opacity: 0.85;">@room.RoomTypeName</div>
+                            <div style="font-size: 0.68rem; opacity: 0.75;">@room.BasePrice.ToString("N0") VNĐ</div>
+                            @if (room.GuestName != null)
+                            {
+                                <div style="font-size: 0.68rem; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 3px;">
+                                    <i class="bi bi-person-fill"></i> @room.GuestName
+                                </div>
+                            }
+                        </div>
+                        <!-- Status change dropdown -->
+                        <div class="collapse mt-1" id="room-@room.Id">
+                            <form asp-action="UpdateStatus" asp-route-id="@room.Id" method="post" class="card card-body p-2 shadow-sm" style="border-radius: 8px; font-size: 0.78rem;">
+                                @Html.AntiForgeryToken()
+                                <select name="Status" class="form-select form-select-sm mb-2" style="border-radius: 6px; font-size: 0.78rem;">
+                                    @if (room.Status != RoomStatus.Occupied)
+                                    {
+                                        <option value="@RoomStatus.Available" selected="@(room.Status == RoomStatus.Available)">Trống</option>
+                                    }
+                                    <option value="@RoomStatus.Occupied" selected="@(room.Status == RoomStatus.Occupied)">Có khách</option>
+                                    <option value="@RoomStatus.Cleaning" selected="@(room.Status == RoomStatus.Cleaning)">Đang dọn</option>
+                                    <option value="@RoomStatus.Maintenance" selected="@(room.Status == RoomStatus.Maintenance)">Bảo trì</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm w-100" style="background: #1A3C5E; color: white; border-radius: 6px; font-size: 0.75rem;">
+                                    <i class="bi bi-check-lg"></i> Cập nhật
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
