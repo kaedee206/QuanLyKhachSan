@@ -37,7 +37,6 @@ namespace QuanLyKhachSan.Services
 
             _db.Tickets.Add(ticket);
 
-            // Auto-update room status based on ticket type
             var room = await _db.Rooms.FindAsync(model.RoomId);
             if (room != null)
             {
@@ -79,7 +78,6 @@ namespace QuanLyKhachSan.Services
                 if (model.Status == TicketStatus.Resolved)
                 {
                     ticket.ResolvedAt = DateTime.UtcNow;
-                    // Auto-update room status
                     if (ticket.Type == TicketType.Maintenance)
                         ticket.Room.Status = RoomStatus.Cleaning;
                     else if (ticket.Type == TicketType.Housekeeping)

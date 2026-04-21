@@ -18,9 +18,6 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Tạo booking mới (khách hàng hoặc admin)
-        /// </summary>
         public async Task<Booking> CreateBooking(CreateBookingViewModel model, int? userId = null)
         {
             var roomType = await _db.RoomTypes.FindAsync(model.RoomTypeId);
@@ -33,11 +30,9 @@ namespace QuanLyKhachSan.Services
             if (model.CheckOutDate <= model.CheckInDate)
                 throw new InvalidOperationException("Ngày trả phòng phải sau ngày nhận phòng");
 
-            // Calculate total
             var nights = model.CheckOutDate.DayNumber - model.CheckInDate.DayNumber;
             var totalAmount = nights * roomType.BasePrice;
 
-            // Generate booking code
             var bookingCode = await GenerateBookingCode();
 
             var booking = new Booking
@@ -82,9 +77,6 @@ namespace QuanLyKhachSan.Services
             return booking;
         }
 
-        /// <summary>
-        /// Tra cứu booking theo mã và SĐT
-        /// </summary>
         public async Task<Booking?> LookupBooking(string bookingCode, string phone)
         {
             return await _db.Bookings
@@ -95,9 +87,6 @@ namespace QuanLyKhachSan.Services
                 .FirstOrDefaultAsync(b => b.BookingCode == bookingCode && b.Phone == phone);
         }
 
-        /// <summary>
-        /// Xác nhận booking - gán phòng
-        /// </summary>
         public async Task<Booking> ConfirmBooking(string bookingCode, int roomId, int userId)
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
@@ -112,7 +101,6 @@ namespace QuanLyKhachSan.Services
             if (room.Status != RoomStatus.Available)
                 throw new InvalidOperationException("Phòng không có sẵn");
 
-            // Check conflicts
             var hasConflict = await _db.Bookings.AnyAsync(b =>
                 b.RoomId == roomId &&
                 b.Id != booking.Id &&
@@ -141,9 +129,6 @@ namespace QuanLyKhachSan.Services
             return booking;
         }
 
-        /// <summary>
-        /// Check-in khách
-        /// </summary>
         public async Task<(Booking booking, Invoice invoice)> CheckIn(string bookingCode, CheckInViewModel model, int userId)
         {
             var booking = await _db.Bookings
@@ -158,7 +143,6 @@ namespace QuanLyKhachSan.Services
             if (finalRoomId == null)
                 throw new InvalidOperationException("Cần chọn phòng để check-in");
 
-            // Update room status to Occupied
             var room = await _db.Rooms.FindAsync(finalRoomId.Value);
             if (room != null)
                 room.Status = RoomStatus.Occupied;
@@ -167,11 +151,9 @@ namespace QuanLyKhachSan.Services
             booking.ActualCheckIn = model.ActualCheckIn ?? DateTime.UtcNow;
             booking.Status = BookingStatus.CheckedIn;
 
-            // Reuse existing invoice if already created, otherwise create new
             var invoice = booking.Invoice;
             if (invoice == null)
             {
-                // Check duplicate at DB level before inserting
                 var existingInvoice = await _db.Invoices.FirstOrDefaultAsync(i => i.BookingId == booking.Id);
                 if (existingInvoice != null)
                 {
@@ -211,9 +193,6 @@ namespace QuanLyKhachSan.Services
             return (booking, invoice);
         }
 
-        /// <summary>
-        /// Check-out khách
-        /// </summary>
         public async Task<(Booking booking, Invoice invoice)> CheckOut(string bookingCode, CheckOutViewModel model, int userId)
         {
             var booking = await _db.Bookings
@@ -233,7 +212,6 @@ namespace QuanLyKhachSan.Services
             booking.Status = BookingStatus.CheckedOut;
             booking.Notes = model.Notes ?? booking.Notes;
 
-            // Update room status to Cleaning
             if (booking.RoomId.HasValue)
             {
                 var room = await _db.Rooms.FindAsync(booking.RoomId.Value);
@@ -241,11 +219,9 @@ namespace QuanLyKhachSan.Services
                     room.Status = RoomStatus.Cleaning;
             }
 
-            // Update or create invoice
             var invoice = booking.Invoice;
             if (invoice == null)
             {
-                // Double-check at DB level to avoid unique constraint violation
                 invoice = await _db.Invoices.FirstOrDefaultAsync(i => i.BookingId == booking.Id);
             }
             if (invoice == null)
@@ -287,9 +263,6 @@ namespace QuanLyKhachSan.Services
             return (booking, invoice);
         }
 
-        /// <summary>
-        /// Hủy booking
-        /// </summary>
         public async Task<Booking> CancelBooking(string bookingCode, int userId)
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
@@ -299,7 +272,6 @@ namespace QuanLyKhachSan.Services
             if (nonCancellable.Contains(booking.Status))
                 throw new InvalidOperationException($"Không thể hủy booking với trạng thái: {booking.Status}");
 
-            // Release room if assigned
             if (booking.RoomId.HasValue)
             {
                 var room = await _db.Rooms.FindAsync(booking.RoomId.Value);
@@ -307,7 +279,6 @@ namespace QuanLyKhachSan.Services
                     room.Status = RoomStatus.Available;
             }
 
-            // Cancel associated invoice if exists
             var invoice = await _db.Invoices.FirstOrDefaultAsync(i => i.BookingId == booking.Id);
             if (invoice != null && invoice.PaymentStatus != PaymentStatus.Paid)
             {
@@ -329,9 +300,6 @@ namespace QuanLyKhachSan.Services
             return booking;
         }
 
-        /// <summary>
-        /// Đánh dấu NoShow
-        /// </summary>
         public async Task<Booking> MarkNoShow(string bookingCode, int userId)
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
@@ -362,9 +330,6 @@ namespace QuanLyKhachSan.Services
             return booking;
         }
 
-        /// <summary>
-        /// Lấy danh sách booking có phân trang và lọc
-        /// </summary>
         public async Task<PaginatedList<Booking>> GetBookings(BookingFilterViewModel filter)
         {
             var query = _db.Bookings
@@ -409,9 +374,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Lấy chi tiết booking
-        /// </summary>
         public async Task<BookingDetailViewModel?> GetBookingDetail(int id)
         {
             var booking = await _db.Bookings
@@ -462,7 +424,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        // ── Helpers ───────────────────────────────────────────────
         private async Task<string> GenerateBookingCode()
         {
             string code;

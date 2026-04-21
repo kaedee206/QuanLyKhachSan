@@ -11,10 +11,6 @@ using QuanLyKhachSan.Models.Enums;
 
 namespace QuanLyKhachSan.Services
 {
-    /// <summary>
-    /// Service tich hop SePay Payment Gateway
-    /// Ho tro: tao thanh toan, kiem tra trang thai, xu ly IPN webhook, polling
-    /// </summary>
     public class SePayService
     {
         private readonly SunHotelDbContext _db;
@@ -23,10 +19,8 @@ namespace QuanLyKhachSan.Services
         private readonly EmailSftpService _emailService;
         private readonly HttpClient _httpClient;
 
-        // Cac truong bat buoc de tao signature (theo tai lieu SePay)
         private static readonly string[] SignatureFields = new[]
         {
-            // Thu tu theo SePay SDK docs - KHONG doi thu tu
             "order_amount", "merchant", "currency", "operation",
             "order_description", "order_invoice_number", "customer_id",
             "payment_method", "success_url", "error_url", "cancel_url"
@@ -74,28 +68,22 @@ namespace QuanLyKhachSan.Services
 
         #region ─── Tao thanh toan ─────────────────────────────────────────
 
-        /// <summary>
-        /// Tao thanh toan SePay cho mot hoa don, tra ve URL checkout de redirect
-        /// </summary>
         public async Task<SePayCheckoutResult> CreatePayment(Invoice invoice)
         {
             var booking = invoice.Booking;
             if (booking == null)
                 return new SePayCheckoutResult { Success = false, ErrorMessage = "Hoa don khong co thong tin booking" };
 
-            // Buoc 1: Khoi tao order voi API SePay de lay order_id va checkout_url
             var orderInitResult = await InitOrder(invoice);
             if (!orderInitResult.Success)
                 return orderInitResult;
 
-            // Buoc 2: Luu thong tin SePay vao invoice
             invoice.SePayOrderId = orderInitResult.OrderId;
             invoice.SePayOrderCode = orderInitResult.OrderCode;
             invoice.SePayPaymentMethod = "BANK_TRANSFER";
             invoice.SePayOrderStatus = "PENDING";
             invoice.SePayCreatedAt = DateTime.UtcNow;
 
-            // Set thoi diem het han polling (mac dinh 5 phut)
             invoice.SePayPollingExpiresAt = DateTime.UtcNow.AddMinutes(PollingMaxMinutes);
             invoice.SePayLastCheckAt = DateTime.UtcNow;
 
@@ -115,19 +103,14 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Khoi tao order qua API SePay
-        /// </summary>
         private async Task<SePayCheckoutResult> InitOrder(Invoice invoice)
         {
             var booking = invoice.Booking!;
 
-            // Tao order_invoice_number: them prefix SP- de phan biet voi cac loai hoa don khac
             var orderInvoiceNumber = $"SP-{invoice.InvoiceNumber}";
             var orderDescription = $"Thanh toan phong KS-{booking.BookingCode}";
             var customerId = booking.Email ?? booking.Phone ?? "GUEST";
 
-            // Build fields dictionary (chuan hoa: viet thuong, loai bo key rong)
             var fields = NormalizeFields(new Dictionary<string, string?>
             {
                 ["merchant"] = MerchantId,
@@ -143,13 +126,9 @@ namespace QuanLyKhachSan.Services
                 ["cancel_url"] = CancelUrl
             });
 
-            // Tao signature
             var signature = CreateSignature(fields);
             fields["signature"] = signature;
 
-            // Gui POST request den SePay
-            // SePay tra ve HTTP 302 -> Location header chua URL checkout
-            // Build body thu cong de giu dung thu tu fields nhu SignatureFields
             var sb = new StringBuilder();
             var orderedFields = SignatureFields
                 .Where(f => fields.ContainsKey(f) && !string.IsNullOrEmpty(fields[f]))
@@ -162,7 +141,6 @@ namespace QuanLyKhachSan.Services
                 sb.Append("=");
                 sb.Append(Uri.EscapeDataString(fields[f]!));
             }
-            // Signature phai o cuoi cung
             if (sb.Length > 0) sb.Append("&");
             sb.Append("signature=");
             sb.Append(Uri.EscapeDataString(fields["signature"] ?? ""));
@@ -182,7 +160,6 @@ namespace QuanLyKhachSan.Services
                 response.Headers.Location,
                 response.Content.Headers.ContentType?.MediaType);
 
-            // Lay URL redirect tu Location header (HTTP 302)
             var redirectUrl = response.Headers.Location?.ToString();
             if (!string.IsNullOrEmpty(redirectUrl))
             {
@@ -196,12 +173,8 @@ namespace QuanLyKhachSan.Services
                 };
             }
 
-            // Khong co Location header -> kiem tra body HTML co chua checkout URL khong
             if (responseBody.Contains("CURRENT_URL") || responseBody.Contains("my.sepay.vn"))
             {
-                // SePay tra ve trang checkout HTML -> extract URL checkout day du tu body
-                // URL checkout day du nam trong <a href="https://my.sepay.vn/v1/checkout?...">
-                // Ky tu ket thuc URL la & (next param), } (trong JS), " hoac newline
                 var match = Regex.Match(responseBody, @"https://my\.sepay\.vn/v1/checkout\?[^""&\s}\)\|]+");
                 if (match.Success)
                 {
@@ -217,7 +190,6 @@ namespace QuanLyKhachSan.Services
                 }
             }
 
-            // Khong the extract URL -> khong phai JSON
             var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
             if (!contentType.Contains("application/json"))
             {
@@ -238,7 +210,6 @@ namespace QuanLyKhachSan.Services
                 };
             }
 
-            // Parse response JSON
             try
             {
                 var json = JsonSerializer.Deserialize<JsonElement>(responseBody);
@@ -279,10 +250,6 @@ namespace QuanLyKhachSan.Services
 
         #region ─── Kiem tra trang thai don hang ───────────────────────────
 
-        /// <summary>
-        /// Kiem tra trang thai don hang cua SePay ( dung cho polling)
-        /// Tra ve true neu da thanh toan
-        /// </summary>
         public async Task<bool> CheckOrderStatus(string orderCode)
         {
             if (string.IsNullOrEmpty(orderCode)) return false;
@@ -301,7 +268,6 @@ namespace QuanLyKhachSan.Services
                 var body = await response.Content.ReadAsStringAsync();
                 var json = JsonSerializer.Deserialize<JsonElement>(body);
 
-                // Kiem tra trang thai don: CAPTURED = thanh toan thanh cong
                 if (json.TryGetProperty("order", out var order))
                 {
                     var status = order.TryGetProperty("order_status", out var s) ? s.GetString() : null;
@@ -321,14 +287,10 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Xu ly tat ca cac hoa don dang cho thanh toan (chay dinh ky)
-        /// </summary>
         public async Task ProcessPendingInvoices()
         {
             var now = DateTime.UtcNow;
 
-            // Lay tat ca hoa don chua thanh toan, co SePay order, chua het han polling
             var pendingInvoices = await _db.Invoices
                 .Include(i => i.Booking).ThenInclude(b => b.RoomType)
                 .Include(i => i.Booking).ThenInclude(b => b.Room)
@@ -360,9 +322,6 @@ namespace QuanLyKhachSan.Services
 
         #region ─── Xu ly IPN webhook ─────────────────────────────────────
 
-        /// <summary>
-        /// Xu ly IPN webhook tu SePay (SePay goi POST ve khi co giao dich)
-        /// </summary>
         public async Task<bool> ProcessIpn(SePayIpnPayload payload)
         {
             _logger.LogInformation(
@@ -372,7 +331,7 @@ namespace QuanLyKhachSan.Services
             if (payload.NotificationType != "ORDER_PAID")
             {
                 _logger.LogInformation("SePay IPN: bỏ qua notification type = {Type}", payload.NotificationType);
-                return true; // Tra 200 de SePay ngung retry
+                return true;
             }
 
             var orderInvoiceNumber = payload.Order?.OrderInvoiceNumber;
@@ -382,7 +341,6 @@ namespace QuanLyKhachSan.Services
                 return false;
             }
 
-            // Tim invoice: loai bo prefix "SP-" neu co
             var invoiceNumber = orderInvoiceNumber.StartsWith("SP-")
                 ? orderInvoiceNumber[3..]
                 : orderInvoiceNumber;
@@ -404,14 +362,12 @@ namespace QuanLyKhachSan.Services
                 return true;
             }
 
-            // Kiem tra so tien (anti-fraud)
             var paidAmount = decimal.TryParse(payload.Transaction?.TransactionAmount ?? "0", out var amt) ? amt : 0;
             if (paidAmount < invoice.TotalAmount)
             {
                 _logger.LogWarning(
                     "SePay IPN: so tien khong khop. Expected={Expected}, Received={Received}",
                     invoice.TotalAmount, paidAmount);
-                // Van xu ly vi SePay da xac nhan thanh toan
             }
 
             var transactionId = payload.Transaction?.TransactionId ?? "";
@@ -428,9 +384,6 @@ namespace QuanLyKhachSan.Services
 
         #region ─── Xac nhan thanh toan ─────────────────────────────────
 
-        /// <summary>
-        /// Xac nhan hoa don da duoc thanh toan qua SePay
-        /// </summary>
         private async Task ConfirmSePayPayment(Invoice invoice, string transactionId, string source)
         {
             invoice.PaymentStatus = PaymentStatus.Paid;
@@ -439,7 +392,7 @@ namespace QuanLyKhachSan.Services
             invoice.SePayOrderStatus = "CAPTURED";
             invoice.SePayTransactionId = transactionId;
             invoice.SePayPaidAt = DateTime.UtcNow;
-            invoice.SePayPollingExpiresAt = null; // Ngung polling
+            invoice.SePayPollingExpiresAt = null;
 
             _db.AuditLogs.Add(new AuditLog
             {
@@ -457,7 +410,6 @@ namespace QuanLyKhachSan.Services
 
             await _db.SaveChangesAsync();
 
-            // Gui email thong bao check-in cho khach hang
             var booking = invoice.Booking;
             if (booking != null)
             {
@@ -475,9 +427,6 @@ namespace QuanLyKhachSan.Services
 
         #region ─── Helpers ───────────────────────────────────────────────
 
-        /// <summary>
-        /// Gui API request den SePay voi Basic Auth
-        /// </summary>
         private async Task<HttpResponseMessage> SendApiRequestAsync(HttpMethod method, string url, FormUrlEncodedContent? content = null)
         {
             var credentials = Convert.ToBase64String(
@@ -492,13 +441,8 @@ namespace QuanLyKhachSan.Services
             return await _httpClient.SendAsync(request);
         }
 
-        /// <summary>
-        /// Tao signature HMAC-SHA256 theo chuan SePay
-        /// Signature = base64(HMAC-SHA256(ke1=val1,ke2=val2,..., signedField1, signedField2,...))
-        /// </summary>
         private string CreateSignature(Dictionary<string, string?> fields)
         {
-            // Theo SePay SDK: chi loc fields ton tai, giu dung thu tu SignatureFields
             var signedParts = SignatureFields
                 .Where(f => fields.ContainsKey(f) && !string.IsNullOrEmpty(fields[f]))
                 .Select(f => $"{f}={fields[f]}")
@@ -513,9 +457,6 @@ namespace QuanLyKhachSan.Services
             return Convert.ToBase64String(hash);
         }
 
-        /// <summary>
-        /// Chuan hoa fields: lower-case keys, loai bo gia tri null/empty
-        /// </summary>
         private static Dictionary<string, string?> NormalizeFields(Dictionary<string, string?> fields)
         {
             return fields
@@ -540,9 +481,6 @@ namespace QuanLyKhachSan.Services
         public string? ErrorMessage { get; set; }
     }
 
-    /// <summary>
-    /// Payload nhan tu SePay IPN webhook
-    /// </summary>
     public class SePayIpnPayload
     {
         [JsonPropertyName("timestamp")]

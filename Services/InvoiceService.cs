@@ -7,9 +7,6 @@ using Newtonsoft.Json;
 
 namespace QuanLyKhachSan.Services
 {
-    /// <summary>
-    /// Service quan ly hoa don va thanh toan (VietQR + MoMo + SePay)
-    /// </summary>
     public class InvoiceService
     {
         private readonly SunHotelDbContext _db;
@@ -25,9 +22,6 @@ namespace QuanLyKhachSan.Services
             _emailService = emailService;
         }
 
-        /// <summary>
-        /// Lấy danh sách hóa đơn có phân trang
-        /// </summary>
         public async Task<PaginatedList<Invoice>> GetInvoices(int page = 1, int pageSize = 20)
         {
             var query = _db.Invoices
@@ -47,9 +41,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Lấy hóa đơn theo số hóa đơn
-        /// </summary>
         public async Task<Invoice?> GetByNumber(string invoiceNumber)
         {
             return await _db.Invoices
@@ -60,9 +51,6 @@ namespace QuanLyKhachSan.Services
                 .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber);
         }
 
-        /// <summary>
-        /// Xác nhận thanh toán (tiền mặt, chuyển khoản, thẻ)
-        /// </summary>
         public async Task<Invoice> ConfirmPayment(string invoiceNumber, PaymentMethod method, int userId)
         {
             var invoice = await _db.Invoices
@@ -103,9 +91,6 @@ namespace QuanLyKhachSan.Services
             return invoice;
         }
 
-        /// <summary>
-        /// Tạo mã QR VietQR cho hóa đơn
-        /// </summary>
         public VietQRViewModel GenerateVietQR(Invoice invoice)
         {
             var bankId = _config["VietQR:BankId"] ?? "vietinbank";
@@ -113,7 +98,6 @@ namespace QuanLyKhachSan.Services
             var accountName = _config["VietQR:AccountName"] ?? "";
             var apiUrl = _config["VietQR:ApiUrl"] ?? "https://img.vietqr.io";
 
-            // Lấy tên ngân hàng
             var bankName = bankId switch
             {
                 "vietinbank" => "VietinBank",
@@ -127,13 +111,11 @@ namespace QuanLyKhachSan.Services
             var roomNumber = invoice.Booking?.Room?.RoomNumber ?? "N/A";
             var content = $"ThanhToanRoom{roomNumber}+{invoice.InvoiceNumber}";
 
-            // Tạo URL QR VietQR
             var qrImageUrl = $"{apiUrl}/image/{bankId}-{accountNo}-compact.png" +
                 $"?addInfo={Uri.EscapeDataString(content)}" +
                 $"&amount={invoice.TotalAmount}" +
                 $"&accountName={Uri.EscapeDataString(accountName)}";
 
-            // Lưu thông tin VietQR vào invoice
             invoice.VietqrBankCode = bankId;
             invoice.VietqrAccountNo = accountNo;
             invoice.VietqrAccountName = accountName;
@@ -155,9 +137,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Xác nhận thanh toán VietQR đã hoàn tất
-        /// </summary>
         public async Task<Invoice> ConfirmVietQR(string invoiceNumber, string reference, int userId)
         {
             var invoice = await _db.Invoices
@@ -197,9 +176,6 @@ namespace QuanLyKhachSan.Services
             return invoice;
         }
 
-        /// <summary>
-        /// Xác nhận thanh toán MoMo đã hoàn tất
-        /// </summary>
         public async Task<Invoice> ConfirmMoMo(string invoiceNumber, string transId, int userId)
         {
             var invoice = await _db.Invoices

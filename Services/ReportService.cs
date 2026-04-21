@@ -16,9 +16,6 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Tổng hợp dữ liệu dashboard
-        /// </summary>
         public async Task<DashboardViewModel> GetDashboardSummary()
         {
             var today = DateTime.UtcNow.Date;
@@ -73,9 +70,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Báo cáo doanh thu
-        /// </summary>
         public async Task<RevenueReportViewModel> GetRevenueReport(ReportFilterViewModel filter)
         {
             var startDate = filter.StartDate.ToDateTime(TimeOnly.MinValue);
@@ -94,7 +88,6 @@ namespace QuanLyKhachSan.Services
             var serviceRevenue = invoices.Sum(i => i.ServiceCharge);
             var totalDiscount = invoices.Sum(i => i.Discount);
 
-            // Breakdown by period
             var breakdown = filter.GroupBy switch
             {
                 "month" => invoices.GroupBy(i => i.PaymentDate!.Value.ToString("yyyy-MM"))
@@ -126,7 +119,6 @@ namespace QuanLyKhachSan.Services
                     }).OrderBy(b => b.Period).ToList()
             };
 
-            // Payment methods
             var paymentMethods = invoices
                 .GroupBy(i => i.PaymentMethod)
                 .Select(g => new PaymentMethodStat

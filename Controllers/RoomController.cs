@@ -15,8 +15,6 @@ namespace QuanLyKhachSan.Controllers
             _roomService = roomService;
         }
 
-        // ─── PUBLIC: Danh sách phòng ─────────────────────────────
-
         [HttpGet]
         public async Task<IActionResult> Listing(RoomSearchViewModel search)
         {
@@ -26,8 +24,6 @@ namespace QuanLyKhachSan.Controllers
             return View(rooms);
         }
 
-        // ─── ADMIN: Room Grid ────────────────────────────────────
-
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpGet]
         public async Task<IActionResult> Index()
@@ -35,8 +31,6 @@ namespace QuanLyKhachSan.Controllers
             var grid = await _roomService.GetRoomGrid();
             return View(grid);
         }
-
-        // ─── ADMIN: Quản lý phòng ───────────────────────────────
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
@@ -55,8 +49,6 @@ namespace QuanLyKhachSan.Controllers
             return View(room);
         }
 
-        // ─── ADMIN: Cập nhật trạng thái phòng ───────────────────
-
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -74,8 +66,6 @@ namespace QuanLyKhachSan.Controllers
             }
             return RedirectToAction("Index");
         }
-
-        // ─── Housekeeping: Dọn phòng ────────────────────────────
 
         [Authorize(Roles = "Admin,Housekeeping")]
         [HttpGet]
@@ -105,8 +95,6 @@ namespace QuanLyKhachSan.Controllers
             }
             return RedirectToAction("Cleaning");
         }
-
-        // ─── PUBLIC: Room Types ──────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> Types()

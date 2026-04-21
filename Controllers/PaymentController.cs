@@ -9,9 +9,6 @@ using System.Security.Claims;
 
 namespace QuanLyKhachSan.Controllers
 {
-    /// <summary>
-    /// Controller xu ly cac thao tac thanh toán (chinh la SePay)
-    /// </summary>
     public class PaymentController : Controller
     {
         private readonly InvoiceService _invoiceService;
@@ -36,14 +33,9 @@ namespace QuanLyKhachSan.Controllers
 
         #region ─── Trang chon phuong thuc thanh toan ─────────────────────
 
-        /// <summary>
-        /// Hien thi trang chon phuong thuc thanh toan
-        /// Tu dong tao hoa don neu chua co
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Index(string code)
         {
-            // Tim booking theo code
             var booking = await _db.Bookings
                 .Include(b => b.RoomType)
                 .Include(b => b.Room)
@@ -60,7 +52,6 @@ namespace QuanLyKhachSan.Controllers
                 return RedirectToAction("Confirmation", "Booking", new { code });
             }
 
-            // Neu chua co invoice, tao moi (check DB truoc de tranh duplicate)
             Invoice? invoice = booking.Invoice;
             if (invoice == null)
             {
@@ -97,7 +88,6 @@ namespace QuanLyKhachSan.Controllers
                     code, invoiceNumber);
             }
 
-            // Lay thong tin SePay neu co
             var viewModel = new PaymentViewModel
             {
                 Booking = booking,
@@ -105,7 +95,6 @@ namespace QuanLyKhachSan.Controllers
                 BookingCode = code,
                 InvoiceNumber = invoice.InvoiceNumber,
                 TotalAmount = invoice.TotalAmount,
-                // MoMo chua duoc config -> disable
                 IsMoMoEnabled = !string.IsNullOrEmpty(_db.Database.CanConnect().ToString())
             };
 
@@ -116,9 +105,6 @@ namespace QuanLyKhachSan.Controllers
 
         #region ─── Khoi tao thanh toan SePay ───────────────────────────
 
-        /// <summary>
-        /// Khoi tao thanh toan SePay va tra ve URL de redirect
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> InitializeSePay(string invoiceNumber)
@@ -130,11 +116,9 @@ namespace QuanLyKhachSan.Controllers
             if (invoice.PaymentStatus == PaymentStatus.Paid)
                 return Json(new { success = false, message = "Hoa don da duoc thanh toan" });
 
-            // Cap nhat payment method thanh SePay
             invoice.PaymentMethod = PaymentMethod.SePay;
             await _db.SaveChangesAsync();
 
-            // Tao payment voi SePay
             var result = await _sePayService.CreatePayment(invoice);
 
             if (!result.Success)
@@ -155,9 +139,6 @@ namespace QuanLyKhachSan.Controllers
             });
         }
 
-        /// <summary>
-        /// Chuyen huong truc tiep den trang thanh toan SePay
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> PayWithSePay(string invoiceNumber)
         {
@@ -172,11 +153,9 @@ namespace QuanLyKhachSan.Controllers
                     new { code = invoice.Booking?.BookingCode });
             }
 
-            // Cap nhat payment method thanh SePay
             invoice.PaymentMethod = PaymentMethod.SePay;
             await _db.SaveChangesAsync();
 
-            // Tao payment
             var result = await _sePayService.CreatePayment(invoice);
 
             if (!result.Success)
@@ -185,7 +164,6 @@ namespace QuanLyKhachSan.Controllers
                 return RedirectToAction("Index", new { code = invoice.Booking?.BookingCode });
             }
 
-            // Redirect den trang thanh toan SePay
             return Redirect(result.CheckoutUrl!);
         }
 
@@ -193,16 +171,12 @@ namespace QuanLyKhachSan.Controllers
 
         #region ─── Callback tu SePay ───────────────────────────────────
 
-        /// <summary>
-        /// Callback thanh cong tu SePay (redirect ve trinh duyet)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> SePaySuccess(string order_id, string order_code)
         {
             _logger.LogInformation("SePay success callback: order_id={OrderId}, order_code={OrderCode}",
                 order_id, order_code);
 
-            // Lay invoice tu order_code
             var invoice = await _db.Invoices
                 .Include(i => i.Booking).ThenInclude(b => b.RoomType)
                 .Include(i => i.Booking).ThenInclude(b => b.Room)
@@ -214,7 +188,6 @@ namespace QuanLyKhachSan.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Neu chua thanh toan, thu xac nhan
             if (invoice.PaymentStatus != PaymentStatus.Paid)
             {
                 var isPaid = await _sePayService.CheckOrderStatus(order_code);
@@ -228,7 +201,6 @@ namespace QuanLyKhachSan.Controllers
                     invoice.SePayPaidAt = DateTime.UtcNow;
                     await _db.SaveChangesAsync();
 
-                    // Gui email check-in
                     var booking = invoice.Booking;
                     if (booking != null)
                     {
@@ -253,9 +225,6 @@ namespace QuanLyKhachSan.Controllers
                 new { code = invoice.Booking?.BookingCode });
         }
 
-        /// <summary>
-        /// Callback that bai tu SePay
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> SePayError(string order_id, string order_code)
         {
@@ -276,9 +245,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        /// <summary>
-        /// Callback huy tu SePay
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> SePayCancel(string order_id, string order_code)
         {

@@ -9,7 +9,8 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Khởi tạo Serilog cho logging
+builder.WebHost.UseUrls("http://+:5000");
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -21,13 +22,11 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// ── Database (Entity Framework Core + MS SQL Server) ────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<SunHotelDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// ── Session (can thiet cho authorization) ─────────────────────
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -38,7 +37,6 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.None;
 });
 
-// ── Authentication (Cookie-based) ────────────────────────────
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -51,7 +49,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.Name = "SunHotel.Auth";
         options.Cookie.SameSite = SameSiteMode.None;
-        // Dam bao cookie chua du cac claims can thiet
         options.Events.OnRedirectToLogin = context =>
         {
             if (context.Request.Headers["Accept"].ToString().Contains("application/json"))
@@ -84,7 +81,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization();
 
-// ── Services (Dependency Injection) ───────────────────────────────
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<RoomService>();
@@ -97,15 +93,12 @@ builder.Services.AddScoped<MoMoService>();
 builder.Services.AddScoped<EmailSftpService>();
 builder.Services.AddScoped<SePayService>();
 
-// ── Background Services ───────────────────────────────────────────
 builder.Services.AddHostedService<QuanLyKhachSan.BackgroundServices.SePayPollingService>();
 
-// ── MVC ──────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// ── Pipeline ─────────────────────────────────────────────────
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -120,7 +113,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ── Routes ───────────────────────────────────────────────────
 app.MapControllerRoute(
     name: "admin",
     pattern: "Admin/{action=Index}/{id?}",
@@ -130,17 +122,14 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// ── Khoi tao du lieu mau (Seed Data) ──────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        // FIX: Mo rong cot booking_code trong database neu dang nho hon 20
         var db = services.GetRequiredService<SunHotelDbContext>();
         try
         {
-#pragma warning disable EF1002 // Chi hardcode table/column name, khong co user input
             await db.Database.ExecuteSqlRawAsync(@"
                 DECLARE @sql NVARCHAR(MAX) = N'';
                 SELECT @sql += N'ALTER TABLE [dbo].[booking] DROP CONSTRAINT ' + QUOTENAME(name) + ';'
@@ -150,7 +139,6 @@ using (var scope = app.Services.CreateScope())
                 IF @sql <> '' EXEC sp_executesql @sql;
                 ALTER TABLE [dbo].[booking] ALTER COLUMN booking_code NVARCHAR(20) NOT NULL;
             ");
-#pragma warning restore EF1002
             Log.Information("Database schema: booking_code column expanded to NVARCHAR(20)");
         }
         catch (Exception ex)
@@ -158,7 +146,6 @@ using (var scope = app.Services.CreateScope())
             Log.Warning(ex, "Schema fix for booking_code failed (may already be correct)");
         }
 
-        // FIX: Them cac cot SePay vao bang invoice neu chua co
         try
         {
             var sepayColumns = new[]
@@ -174,7 +161,6 @@ using (var scope = app.Services.CreateScope())
                 ("sepay_polling_expires_at", "DATETIME2")
             };
 
-            // Lay danh sach cot hien co trong bang invoice (dung sp_executesql de tra ve gia tri)
             var existingColumnsRaw = await db.Database
                 .SqlQueryRaw<string>("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'invoice'")
                 .ToListAsync();
@@ -184,10 +170,8 @@ using (var scope = app.Services.CreateScope())
             {
                 if (!existingColumns.Contains(colName.ToLower()))
                 {
-#pragma warning disable EF1002 // colName/colType la hardcode, khong co user input
                     await db.Database.ExecuteSqlRawAsync(
                         $"ALTER TABLE [dbo].[invoice] ADD [{colName}] {colType} NULL;");
-#pragma warning restore EF1002
                     Log.Information("Database schema: Added column {ColumnName} to invoice table", colName);
                 }
             }
@@ -205,7 +189,6 @@ using (var scope = app.Services.CreateScope())
         }
         catch (InvalidOperationException ex)
         {
-            // Loi nghiem trong - hien thi loi va dung app ngay
             Log.Fatal(ex, "SeedData FAILED - App stopped");
             Console.WriteLine("\n" + new string('=', 70));
             Console.WriteLine("FATAL ERROR: " + ex.Message);
@@ -214,7 +197,7 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("  1. Xoa toan bo bang 'User' trong database");
             Console.WriteLine("  2. Restart app - SeedData se tao lai tai khoan");
             Console.WriteLine(new string('=', 70) + "\n");
-            return; // Stop app
+            return;
         }
         catch (Exception ex)
         {
@@ -225,7 +208,6 @@ using (var scope = app.Services.CreateScope())
             return;
         }
 
-        // Cap nhat ImageUrl cho cac loai phong hien co (neu chua co hoac dang trong folder cu)
         try
         {
             var roomTypeImages = new Dictionary<string, string>
@@ -264,7 +246,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ── Ghi log khoi dong ──────────────────────────────────────────────
 Log.Information("SunHotel MVC khoi dong tren moi truong: {Environment}", app.Environment.EnvironmentName);
 
 app.Run();

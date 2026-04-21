@@ -9,10 +9,6 @@ using QuanLyKhachSan.Models.ViewModels;
 
 namespace QuanLyKhachSan.Services
 {
-    /// <summary>
-    /// Service xử lý thanh toán MoMo theo chuẩn API MoMo Wallet
-    /// Tham khảo: https://github.com/fdhhhdjd/Class-Payment-MOMO
-    /// </summary>
     public class MoMoService
     {
         private readonly SunHotelDbContext _db;
@@ -26,12 +22,8 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Tạo yêu cầu thanh toán MoMo và trả về payUrl để redirect
-        /// </summary>
         public async Task<MoMoPaymentResult> CreatePayment(Invoice invoice, string? returnUrl = null)
         {
-            // Lấy cấu hình MoMo từ appsettings.json
             var partnerCode = _config["MoMo:PartnerCode"] ?? "";
             var accessKey = _config["MoMo:AccessKey"] ?? "";
             var secretKey = _config["MoMo:SecretKey"] ?? "";
@@ -39,19 +31,14 @@ namespace QuanLyKhachSan.Services
             var defaultReturnUrl = _config["MoMo:ReturnUrl"] ?? "http://localhost:5000/Invoice/MoMoReturn";
             var defaultIpnUrl = _config["MoMo:IpnUrl"] ?? "http://localhost:5000/Invoice/MoMoIpn";
 
-            // Tạo requestId và orderId unique
             var requestId = $"{partnerCode}{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
-            var orderId = requestId; // Dùng requestId làm orderId cho đơn giản
+            var orderId = requestId;
 
-            // Lấy thông tin phòng từ booking
             var roomNumber = invoice.Booking?.Room?.RoomNumber ?? "N/A";
             var orderInfo = $"Thanh toan Phong {roomNumber} - HD {invoice.InvoiceNumber}";
 
-            // Nội dung chuyển khoản
             var extraData = $"invoice={invoice.InvoiceNumber}";
 
-            // Build raw signature theo chuẩn MoMo
-            // Thứ tự: accessKey, amount, extraData, ipnUrl, orderId, orderInfo, partnerCode, redirectUrl, requestId, requestType
             var rawSignature = $"accessKey={accessKey}" +
                                $"&amount={invoice.TotalAmount}" +
                                $"&extraData={extraData}" +
@@ -65,7 +52,6 @@ namespace QuanLyKhachSan.Services
 
             var signature = CreateSignature(rawSignature, secretKey);
 
-            // Tạo payload gửi MoMo API
             var payload = new
             {
                 partnerCode,
@@ -84,7 +70,6 @@ namespace QuanLyKhachSan.Services
 
             _logger.LogInformation("MoMo payment request: OrderId={OrderId}, Amount={Amount}", orderId, invoice.TotalAmount);
 
-            // Gọi MoMo API
             try
             {
                 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -98,7 +83,6 @@ namespace QuanLyKhachSan.Services
 
                 if (momoResponse != null && !string.IsNullOrEmpty(momoResponse.PayUrl))
                 {
-                    // Lưu MoMo order info vào invoice
                     invoice.MomoOrderId = orderId;
                     invoice.MomoRequestId = requestId;
                     invoice.MomoPayUrl = momoResponse.PayUrl;
@@ -138,15 +122,11 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Xử lý IPN (Instant Payment Notification) từ MoMo
-        /// </summary>
         public async Task<bool> ProcessIpn(MoMoIpnModel ipnData)
         {
             var secretKey = _config["MoMo:SecretKey"] ?? "";
             var accessKey = _config["MoMo:AccessKey"] ?? "";
 
-            // Build raw signature để verify
             var rawSignature = $"accessKey={accessKey}" +
                               $"&amount={ipnData.Amount}" +
                               $"&extraData={ipnData.ExtraData}" +
@@ -168,7 +148,6 @@ namespace QuanLyKhachSan.Services
                 return false;
             }
 
-            // Tìm invoice theo MoMo orderId
             var invoice = await _db.Invoices.FirstOrDefaultAsync(i => i.MomoOrderId == ipnData.OrderId);
             if (invoice == null)
             {
@@ -176,7 +155,6 @@ namespace QuanLyKhachSan.Services
                 return false;
             }
 
-            // Kiểm tra resultCode: 0 = thành công
             if (ipnData.ResultCode == 0)
             {
                 invoice.PaymentStatus = PaymentStatus.Paid;
@@ -199,9 +177,6 @@ namespace QuanLyKhachSan.Services
             return true;
         }
 
-        /// <summary>
-        /// Xử lý return URL từ MoMo (redirect về browser)
-        /// </summary>
         public async Task<MoMoPaymentResult> ProcessReturn(MoMoReturnModel returnData)
         {
             var invoice = await _db.Invoices.FirstOrDefaultAsync(i => i.MomoOrderId == returnData.OrderId);
@@ -234,9 +209,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Tạo chữ ký HMAC SHA256 cho MoMo
-        /// </summary>
         private static string CreateSignature(string rawData, string secretKey)
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
@@ -244,10 +216,6 @@ namespace QuanLyKhachSan.Services
             return Convert.ToHexString(hash).ToLowerInvariant();
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ViewModels cho MoMo
-    // ═══════════════════════════════════════════════════════════════════════
 
     public class MoMoPaymentResult
     {

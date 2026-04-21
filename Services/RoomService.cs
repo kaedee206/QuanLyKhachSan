@@ -18,9 +18,6 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Tìm phòng trống theo ngày và loại phòng
-        /// </summary>
         public async Task<List<Room>> FindAvailableRooms(RoomSearchViewModel search)
         {
             var query = _db.Rooms
@@ -35,7 +32,6 @@ namespace QuanLyKhachSan.Services
 
             var rooms = await query.OrderBy(r => r.Floor).ThenBy(r => r.RoomNumber).ToListAsync();
 
-            // Filter by date conflicts if dates are provided
             if (search.CheckInDate.HasValue && search.CheckOutDate.HasValue)
             {
                 var checkIn = search.CheckInDate.Value;
@@ -58,9 +54,6 @@ namespace QuanLyKhachSan.Services
             return rooms;
         }
 
-        /// <summary>
-        /// Lấy room grid data cho dashboard
-        /// </summary>
         public async Task<RoomGridViewModel> GetRoomGrid()
         {
             var rooms = await _db.Rooms
@@ -69,7 +62,6 @@ namespace QuanLyKhachSan.Services
                 .ThenBy(r => r.RoomNumber)
                 .ToListAsync();
 
-            // Get active bookings for occupied rooms
             var activeBookings = await _db.Bookings
                 .Where(b => b.RoomId != null &&
                        (b.Status == BookingStatus.Pending ||
@@ -123,9 +115,6 @@ namespace QuanLyKhachSan.Services
             };
         }
 
-        /// <summary>
-        /// Cập nhật trạng thái phòng
-        /// </summary>
         public async Task<Room> UpdateRoomStatus(int roomId, RoomStatus newStatus, int? userId = null)
         {
             var room = await _db.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == roomId);
@@ -156,9 +145,6 @@ namespace QuanLyKhachSan.Services
             return room;
         }
 
-        /// <summary>
-        /// Cập nhật trạng thái dọn phòng (Housekeeping)
-        /// </summary>
         public async Task<Room> UpdateCleaningStatus(int roomId, RoomStatus status, int userId)
         {
             var room = await _db.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == roomId);
@@ -211,15 +197,11 @@ namespace QuanLyKhachSan.Services
             return await _db.RoomTypes.FindAsync(id);
         }
 
-        // ── Validation helpers ────────────────────────────────────
         private static bool IsValidStatusTransition(RoomStatus current, RoomStatus target)
         {
             var validTransitions = new Dictionary<RoomStatus, RoomStatus[]>
             {
-                // Trống → Có khách (chỉ qua CheckIn) hoặc Dọn / Bảo trì
                 { RoomStatus.Available, new[] { RoomStatus.Occupied, RoomStatus.Cleaning, RoomStatus.Maintenance } },
-                // Có khách → Chỉ được chuyển sang Đang dọn (qua CheckOut) hoặc Bảo trì
-                // KHÔNG cho phép chuyển trực tiếp sang Trống
                 { RoomStatus.Occupied, new[] { RoomStatus.Cleaning, RoomStatus.Maintenance } },
                 { RoomStatus.Cleaning, new[] { RoomStatus.Available, RoomStatus.Maintenance } },
                 { RoomStatus.Maintenance, new[] { RoomStatus.Cleaning, RoomStatus.Available } }

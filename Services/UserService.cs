@@ -114,7 +114,7 @@ namespace QuanLyKhachSan.Services
             var user = await _db.Users.FindAsync(id);
             if (user == null) return false;
 
-            user.IsActive = false; // Soft delete
+            user.IsActive = false;
             await _db.SaveChangesAsync();
             _logger.LogInformation("User soft-deleted: {UserId}", id);
             return true;

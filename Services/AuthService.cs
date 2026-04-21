@@ -33,11 +33,9 @@ namespace QuanLyKhachSan.Services
                 return null;
             }
 
-            // Update last login
             user.LastLogin = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            // Audit log
             _db.AuditLogs.Add(new AuditLog
             {
                 UserId = user.Id,

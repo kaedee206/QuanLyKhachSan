@@ -29,9 +29,6 @@ namespace QuanLyKhachSan.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Trang danh sách hóa đơn
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Index(int page = 1)
         {
@@ -39,9 +36,6 @@ namespace QuanLyKhachSan.Controllers
             return View(invoices);
         }
 
-        /// <summary>
-        /// Chi tiet hoa don
-        /// </summary>
         [HttpGet]
         [Route("Detail/{id}")]
         public async Task<IActionResult> Detail(string id)
@@ -51,9 +45,6 @@ namespace QuanLyKhachSan.Controllers
             return View(invoice);
         }
 
-        /// <summary>
-        /// In hoa don — tra ve partial view khong co layout
-        /// </summary>
         [HttpGet]
         [Route("Print/{id}")]
         public async Task<IActionResult> Print(string id)
@@ -63,9 +54,6 @@ namespace QuanLyKhachSan.Controllers
             return View("~/Views/Invoice/_InvoicePrint.cshtml", invoice);
         }
 
-        /// <summary>
-        /// Đánh dấu hóa đơn đã thanh toán thủ công (nhanh, không cần chọn phương thức)
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManualMarkPaid(string id)
@@ -91,9 +79,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Detail", new { id });
         }
 
-        /// <summary>
-        /// Xác nhận thanh toán (tiền mặt, chuyển khoản, thẻ)
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmPayment(string id, ConfirmPaymentViewModel model)
@@ -103,7 +88,6 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var invoice = await _invoiceService.ConfirmPayment(id, model.PaymentMethod, userId);
 
-                // Gửi email thông báo đã hoàn tất thanh toán và có thể check-in
                 var booking = invoice.Booking;
                 if (booking != null)
                 {
@@ -120,9 +104,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Detail", new { id });
         }
 
-        /// <summary>
-        /// Trang thanh toán VietQR
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> VietQR(string id)
         {
@@ -133,9 +114,6 @@ namespace QuanLyKhachSan.Controllers
             return View(qrData);
         }
 
-        /// <summary>
-        /// Xác nhận thanh toán VietQR đã hoàn tất
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmVietQR(string id, string reference)
@@ -145,7 +123,6 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var invoice = await _invoiceService.ConfirmVietQR(id, reference, userId);
 
-                // Gửi email thông báo đã hoàn tất thanh toán và có thể check-in
                 var booking = invoice.Booking;
                 if (booking != null)
                 {
@@ -162,9 +139,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Detail", new { id });
         }
 
-        /// <summary>
-        /// Khởi tạo thanh toán MoMo - redirect đến MoMo gateway
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> MoMoPayment(string id)
         {
@@ -181,9 +155,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Detail", new { id });
         }
 
-        /// <summary>
-        /// Xử lý return URL từ MoMo (redirect về browser)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> MoMoReturn(string orderId, string requestId, int? resultCode, string? message, string? localMessage, string? extraData)
         {
@@ -201,16 +172,14 @@ namespace QuanLyKhachSan.Controllers
 
             if (result.Success)
             {
-                // Lấy invoice để xác nhận thanh toán MoMo và gửi email check-in
                 var invoice = await _invoiceService.GetByNumber(result.InvoiceNumber!);
                 if (invoice != null)
                 {
                     var userId = User.Identity?.IsAuthenticated == true
                         ? int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)
-                        : 1; // fallback userId cho MoMo callback
+                        : 1;
                     await _invoiceService.ConfirmMoMo(result.InvoiceNumber!, "", userId);
 
-                    // Gửi email thông báo đã hoàn tất thanh toán và có thể check-in
                     var booking = invoice.Booking;
                     if (booking != null)
                     {
@@ -229,9 +198,6 @@ namespace QuanLyKhachSan.Controllers
             }
         }
 
-        /// <summary>
-        /// IPN endpoint - MoMo server gọi để thông báo kết quả thanh toán
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> MoMoIpn([FromBody] MoMoIpnModel ipnData)
         {
@@ -239,23 +205,15 @@ namespace QuanLyKhachSan.Controllers
             return Content(success ? "{\"status\":\"OK\"}" : "{\"status\":\"FAIL\"}", "application/json");
         }
 
-        /// <summary>
-        /// IPN endpoint - SePay goi POST ve khi co giao dich thanh toan thanh cong
-        /// (AllowAnonymous vi SePay goi truc tiep khong can auth)
-        /// </summary>
         [HttpPost("SePayIpn")]
         [AllowAnonymous]
         public async Task<IActionResult> SePayIpn([FromBody] SePayIpnPayload payload)
         {
-            // SePayService xu ly IPN: xac nhan thanh toan + gui email check-in
             var sePayService = HttpContext.RequestServices.GetRequiredService<SePayService>();
             var success = await sePayService.ProcessIpn(payload);
             return Content(success ? "{\"status\":\"OK\"}" : "{\"status\":\"FAIL\"}", "application/json");
         }
 
-        /// <summary>
-        /// Gửi email check-in ready cho hóa đơn (dùng chung cho các phương thức thanh toán)
-        /// </summary>
         private async Task SendCheckInEmailForInvoice(Invoice invoice)
         {
             var booking = invoice.Booking;

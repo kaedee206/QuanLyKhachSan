@@ -25,8 +25,6 @@ namespace QuanLyKhachSan.Controllers
             _emailService = emailService;
         }
 
-        // ─── PUBLIC: Trang đặt phòng khách hàng ─────────────────
-
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -57,7 +55,6 @@ namespace QuanLyKhachSan.Controllers
                 var booking = await _bookingService.CreateBooking(model, userId);
                 TempData["Success"] = $"Đặt phòng thành công! Mã booking: {booking.BookingCode}";
 
-                // Gửi email xác nhận đặt phòng cho khách hàng
                 await _emailService.SendBookingConfirmationEmail(booking);
 
                 return RedirectToAction("Confirmation", new { code = booking.BookingCode });
@@ -77,8 +74,6 @@ namespace QuanLyKhachSan.Controllers
             if (detail == null) return NotFound();
             return View(detail);
         }
-
-        // ─── PUBLIC: Tra cứu booking ─────────────────────────────
 
         [HttpGet]
         public IActionResult Lookup()
@@ -102,8 +97,6 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Confirmation", new { code = booking.BookingCode });
         }
 
-        // ─── ADMIN: Danh sách booking ────────────────────────────
-
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpGet]
         public async Task<IActionResult> Index(BookingFilterViewModel filter)
@@ -121,8 +114,6 @@ namespace QuanLyKhachSan.Controllers
             if (detail == null) return NotFound();
             return View(detail);
         }
-
-        // ─── ADMIN: Tạo booking ──────────────────────────────────
 
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpGet]
@@ -152,7 +143,6 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var booking = await _bookingService.CreateBooking(model, userId);
 
-                // Gửi email xác nhận đặt phòng cho khách hàng (nếu có email)
                 await _emailService.SendBookingConfirmationEmail(booking);
 
                 TempData["Success"] = $"Tạo booking thành công: {booking.BookingCode}";
@@ -165,8 +155,6 @@ namespace QuanLyKhachSan.Controllers
                 return View(model);
             }
         }
-
-        // ─── ADMIN: Xác nhận booking ─────────────────────────────
 
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpPost]
@@ -185,8 +173,6 @@ namespace QuanLyKhachSan.Controllers
             }
             return RedirectToAction("Index");
         }
-
-        // ─── ADMIN: Check-in ─────────────────────────────────────
 
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpGet]
@@ -218,8 +204,6 @@ namespace QuanLyKhachSan.Controllers
             }
             return RedirectToAction("CheckIn");
         }
-
-        // ─── ADMIN: Check-out ────────────────────────────────────
 
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpGet]
@@ -253,8 +237,6 @@ namespace QuanLyKhachSan.Controllers
             }
         }
 
-        // ─── ADMIN: Hủy booking ──────────────────────────────────
-
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -272,8 +254,6 @@ namespace QuanLyKhachSan.Controllers
             }
             return RedirectToAction("Index");
         }
-
-        // ─── ADMIN: Đánh dấu NoShow ─────────────────────────────
 
         [Authorize(Roles = "Admin,Manager,Receptionist")]
         [HttpPost]

@@ -8,10 +8,6 @@ using QuanLyKhachSan.Models.Enums;
 
 namespace QuanLyKhachSan.Services
 {
-    /// <summary>
-    /// Service gửi email qua SFTP mail server
-    /// Hỗ trợ: SMTP qua SSH tunnel (SFTP/SMTP proxy)
-    /// </summary>
     public class EmailSftpService
     {
         private readonly SunHotelDbContext _db;
@@ -25,9 +21,6 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Gửi email qua SMTP server (có thể qua SFTP tunnel nếu cấu hình)
-        /// </summary>
         public async Task<bool> SendEmail(string toEmail, string subject, string body, string template = "general")
         {
             var smtpHost = _config["Email:Host"];
@@ -42,7 +35,6 @@ namespace QuanLyKhachSan.Services
             var sftpUser = _config["Email:SftpUser"];
             var sftpPass = _config["Email:SftpPassword"];
 
-            // Tạo email queue record
             var emailQueue = new EmailQueue
             {
                 ToEmail = toEmail,
@@ -66,7 +58,6 @@ namespace QuanLyKhachSan.Services
                     await SendViaSmtp(smtpHost!, smtpPort, smtpUser!, smtpPass!, fromEmail, fromName, toEmail, subject, body);
                 }
 
-                // Cập nhật trạng thái thành công
                 emailQueue.Status = EmailStatus.Sent;
                 emailQueue.SentAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
@@ -76,7 +67,6 @@ namespace QuanLyKhachSan.Services
             }
             catch (Exception ex)
             {
-                // Cập nhật trạng thái thất bại
                 emailQueue.Status = EmailStatus.Failed;
                 emailQueue.Attempts++;
                 emailQueue.LastError = ex.Message;
@@ -87,9 +77,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Gửi email trực tiếp qua SMTP (không qua SFTP)
-        /// </summary>
         private async Task SendViaSmtp(string host, int port, string user, string password, string fromEmail, string fromName, string toEmail, string subject, string body)
         {
             using var client = new SmtpClient(host, port)
@@ -111,10 +98,6 @@ namespace QuanLyKhachSan.Services
             await client.SendMailAsync(message);
         }
 
-        /// <summary>
-        /// Gửi email qua SMTP thông qua SFTP/SSH tunnel (port forwarding)
-        /// Sử dụng Renci.SshNet để tạo SSH tunnel đến mail server
-        /// </summary>
         private async Task SendViaSftpTunnel(string smtpHost, int smtpPort, string smtpUser, string smtpPassword, string fromEmail, string fromName, string toEmail, string subject, string body)
         {
             var sftpHost = _config["Email:SftpHost"]!;
@@ -123,24 +106,21 @@ namespace QuanLyKhachSan.Services
             var sftpPass = _config["Email:SftpPassword"] ?? "";
             var localPort = int.Parse(_config["Email:LocalSmtpPort"] ?? "1025");
 
-            // Tạo SSH forward connection để tunnel SMTP (local port forwarding)
             using var client = new SshClient(sftpHost, sftpPort, sftpUser, sftpPass);
             client.Connect();
 
             if (!client.IsConnected)
                 throw new InvalidOperationException("Khong the ket noi SFTP server");
 
-            // Tạo port forwarding (SSH tunnel) - dùng ForwardedPortLocal
             var forwardedPort = new Renci.SshNet.ForwardedPortLocal("127.0.0.1", (uint)localPort, smtpHost, (uint)smtpPort);
             client.AddForwardedPort(forwardedPort);
             forwardedPort.Start();
 
             try
             {
-                // Gửi email qua tunnel
                 using var smtpClient = new SmtpClient("127.0.0.1", localPort)
                 {
-                    EnableSsl = false, // SSH tunnel đã mã hóa
+                    EnableSsl = false,
                     Credentials = new NetworkCredential(smtpUser, smtpPassword),
                     DeliveryMethod = SmtpDeliveryMethod.Network
                 };
@@ -165,9 +145,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Gửi email xác nhận booking cho khách hàng (thiết kế HTML/CSS đẹp)
-        /// </summary>
         public async Task SendBookingConfirmationEmail(Booking booking)
         {
             var subject = $"Xac nhan dat phong - Ma {booking.BookingCode} | Sun Hotel";
@@ -287,9 +264,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Gửi email thông báo thanh toán thành công (thiết kế HTML/CSS đẹp)
-        /// </summary>
         public async Task SendPaymentConfirmationEmail(Invoice invoice)
         {
             var booking = invoice.Booking;
@@ -415,10 +389,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Gui email thong bao da hoan tat thu tuc thanh toan va co the check-in
-        /// Thoi gian check-in cu the: gio:phut, ngay/thang/nam (VN timezone)
-        /// </summary>
         public async Task SendCheckInReadyEmail(Invoice invoice, DateTime checkInTime)
         {
             var booking = invoice.Booking;
@@ -428,7 +398,6 @@ namespace QuanLyKhachSan.Services
             var roomNumber = booking.Room?.RoomNumber ?? "Chua xep phong";
             var roomTypeName = booking.RoomType?.Name ?? "Chua xep loai phong";
 
-            // Dinh dang thoi gian check-in: gio:phut, ngay/thang/nam (VN timezone)
             var vnZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
             var vnCheckIn = TimeZoneInfo.ConvertTimeFromUtc(checkInTime, vnZone);
             var formattedTime = vnCheckIn.ToString("HH:mm");
@@ -573,9 +542,6 @@ namespace QuanLyKhachSan.Services
             }
         }
 
-        /// <summary>
-        /// Xử lý hàng đợi email (chạy background hoặc scheduled)
-        /// </summary>
         public async Task ProcessEmailQueue(int maxProcess = 10)
         {
             var pendingEmails = await _db.EmailQueues

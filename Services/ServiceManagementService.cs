@@ -18,9 +18,6 @@ namespace QuanLyKhachSan.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Thêm dịch vụ cho booking
-        /// </summary>
         public async Task<Service> AddService(AddServiceViewModel model, int userId)
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == model.BookingCode);
@@ -67,9 +64,6 @@ namespace QuanLyKhachSan.Services
             return service;
         }
 
-        /// <summary>
-        /// Lấy dịch vụ theo booking
-        /// </summary>
         public async Task<(List<Service> services, decimal total, Booking booking)> GetServicesByBookingCode(string bookingCode)
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
@@ -119,9 +113,6 @@ namespace QuanLyKhachSan.Services
             return true;
         }
 
-        /// <summary>
-        /// Recalculate invoice ServiceCharge and TotalAmount based on all services for a booking
-        /// </summary>
         private async Task RecalculateInvoiceTotalAsync(int bookingId)
         {
             var servicesTotal = await _db.Services
@@ -138,9 +129,6 @@ namespace QuanLyKhachSan.Services
             await _db.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Lay tat ca dich vu (co phan trang)
-        /// </summary>
         public async Task<PaginatedList<Service>> GetAllServices(int page = 1, int pageSize = 20)
         {
             var query = _db.Services
