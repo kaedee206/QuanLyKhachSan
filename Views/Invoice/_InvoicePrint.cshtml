@@ -17,10 +17,10 @@
     };
     var payText = Model.PaymentStatus switch
     {
-        PaymentStatus.Unpaid => "CHUA THANH TOAN",
-        PaymentStatus.Pending => "DANG CHO",
-        PaymentStatus.Paid => "DA THANH TOAN",
-        PaymentStatus.Refunded => "DA HOAN TIEN",
+        PaymentStatus.Unpaid => "CHƯA THANH TOÁN",
+        PaymentStatus.Pending => "ĐANG CHỜ",
+        PaymentStatus.Paid => "ĐÃ THANH TOÁN",
+        PaymentStatus.Refunded => "ĐÃ HOÀN TIỀN",
         _ => Model.PaymentStatus.ToString().ToUpper()
     };
     var servicesTotal = services.Sum(s => s.TotalAmount);
@@ -28,12 +28,12 @@
 
     var methodText = Model.PaymentMethod switch
     {
-        PaymentMethod.Cash => "Tien mat",
-        PaymentMethod.Transfer => "Chuyen khoan",
+        PaymentMethod.Cash => "Tiền mặt",
+        PaymentMethod.Transfer => "Chuyển khoản",
         PaymentMethod.VietQR => "VietQR",
         PaymentMethod.MoMo => "MoMo",
         PaymentMethod.SePay => "SePay",
-        PaymentMethod.Card => "The",
+        PaymentMethod.Card => "Thẻ",
         _ => Model.PaymentMethod.ToString()
     };
 
@@ -45,7 +45,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoa don @Model.InvoiceNumber</title>
+    <title>Hóa đơn @Model.InvoiceNumber</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -381,10 +381,10 @@
     <!-- Print controls (hidden when printing) -->
     <div class="print-controls">
         <button class="print-btn" onclick="window.print()">
-            <span class="icon">&#128438;</span> In hoa don
+            <span class="icon">&#128438;</span> In hóa đơn
         </button>
         <a href="javascript:history.back()" class="close-btn">
-            <span>&#10005;</span> Dong
+            <span>&#10005;</span> Đóng
         </a>
     </div>
 

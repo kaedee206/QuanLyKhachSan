@@ -91,15 +91,15 @@
                             <div>@b.NumGuests</div>
                         </div>
                         <div class="mb-3">
-                            <span class="text-muted">Tong tien phong:</span>
+                            <span class="text-muted">Tổng tiền phòng:</span>
                             <div style="color: #888; font-size: 0.85rem;">@b.TotalAmount.ToString("N0") VNĐ</div>
                         </div>
                         <div class="mb-3">
-                            <span class="text-muted">Tong tien dich vu:</span>
+                            <span class="text-muted">Tổng tiền dịch vụ:</span>
                             <div style="color: #2E8B8B; font-size: 0.85rem;">@Model.Services.Sum(s => s.TotalAmount).ToString("N0") VNĐ</div>
                         </div>
                         <div class="mb-3">
-                            <span class="text-muted">Tong cong thanh toan:</span>
+                            <span class="text-muted">Tổng cộng thanh toán:</span>
                             <div class="fw-bold" style="color: #D4AF37; font-size: 1.1rem;">@((b.TotalAmount + Model.Services.Sum(s => s.TotalAmount)).ToString("N0")) VNĐ</div>
                         </div>
                     </div>

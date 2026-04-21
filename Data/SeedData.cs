@@ -6,13 +6,13 @@ using QuanLyKhachSan.Models.Enums;
 namespace QuanLyKhachSan.Data
 {
     /// <summary>
-    /// Lop khoi tao du lieu mau cho co so du lieu
-    /// Chay lan dau khi ung dung khoi dong
+    /// Lớp khởi tạo dữ liệu mẫu cho cơ sở dữ liệu
+    /// Chạy lần đầu khi ứng dụng khởi động
     /// </summary>
     public static class SeedData
     {
         /// <summary>
-        /// Khoi tao toan bo du lieu mau
+        /// Khởi tạo toàn bộ dữ liệu mẫu
         /// </summary>
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
@@ -22,31 +22,31 @@ namespace QuanLyKhachSan.Data
 
             try
             {
-                // Dam bao database da duoc tao
+                // Đảm bảo database đã được tạo
                 await context.Database.EnsureCreatedAsync();
 
-                // Kiem tra da co du lieu chua
+                // Kiểm tra đã có dữ liệu chưa
                 if (await context.Users.AnyAsync())
                 {
-                    // Database da co user -> chi fix role sai (chay 1 lan duy nhat)
+                    // Database đã có user -> chỉ fix role sai (chạy 1 lần duy nhất)
                     await FixUserRolesAsync(context, logger);
                     return;
                 }
 
-                logger.LogInformation("Bat dau khoi tao du lieu mau...");
+                logger.LogInformation("Bắt đầu khởi tạo dữ liệu mẫu...");
 
                 // ════════════════════════════════════════════════════════
-                // 1. TAO LOAI PHONG (RoomTypes)
+                // 1. TẠO LOẠI PHÒNG (RoomTypes)
                 // ════════════════════════════════════════════════════════
                 var roomTypes = new List<RoomType>
                 {
                     new RoomType
                     {
                         Name = "Standard",
-                        Description = "Phong Standard voi cac tien nghi co ban, phu hop cho 1-2 nguoi",
+                        Description = "Phòng Standard với các tiện nghi cơ bản, phù hợp cho 1-2 người",
                         BasePrice = 450000m,
                         MaxGuests = 2,
-                        Amenities = "[\"Wifi\",\"Dieu hoa\",\"TV\",\"Nuoc uong mien phi\"]",
+                        Amenities = "[\"Wifi\",\"Điều hòa\",\"TV\",\"Nước uống miễn phí\"]",
                         ImageUrl = "/images/rooms/single-1.jpg",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
@@ -54,10 +54,10 @@ namespace QuanLyKhachSan.Data
                     new RoomType
                     {
                         Name = "Superior",
-                        Description = "Phong Superior rong rai hon, co ban cong, view dep",
+                        Description = "Phòng Superior rộng rãi hơn, có ban công, view đẹp",
                         BasePrice = 650000m,
                         MaxGuests = 2,
-                        Amenities = "[\"Wifi\",\"Dieu hoa\",\"TV\",\"Mini bar\",\"Ban lam viec\",\"Bancong\"]",
+                        Amenities = "[\"Wifi\",\"Điều hòa\",\"TV\",\"Mini bar\",\"Bàn làm việc\",\"Ban công\"]",
                         ImageUrl = "/images/rooms/double-1.jpg",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
@@ -65,10 +65,10 @@ namespace QuanLyKhachSan.Data
                     new RoomType
                     {
                         Name = "Deluxe",
-                        Description = "Phong Deluxe cao cap, dien tich lon, co phong khach rieng",
+                        Description = "Phòng Deluxe cao cấp, diện tích lớn, có phòng khách riêng",
                         BasePrice = 950000m,
                         MaxGuests = 3,
-                        Amenities = "[\"Wifi\",\"Dieu hoa\",\"Smart TV\",\"Mini bar\",\"Phong khach\",\"Bao hoa\"]",
+                        Amenities = "[\"Wifi\",\"Điều hòa\",\"Smart TV\",\"Mini bar\",\"Phòng khách\",\"Bồn tắm\"]",
                         ImageUrl = "/images/rooms/family-1.jpg",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
@@ -76,10 +76,10 @@ namespace QuanLyKhachSan.Data
                     new RoomType
                     {
                         Name = "Suite",
-                        Description = "Phong Suite sang trong, co phong khach, phong ngu rieng, jacuzzi",
+                        Description = "Phòng Suite sang trọng, có phòng khách, phòng ngủ riêng, jacuzzi",
                         BasePrice = 1500000m,
                         MaxGuests = 4,
-                        Amenities = "[\"Wifi\",\"Dieu hoa\",\"Smart TV 65\\\"\",\"Mini bar\",\"Phong khach\",\"Phong ngu rieng\",\"Jacuzzi\",\"Bao hoa cao cap\"]",
+                        Amenities = "[\"Wifi\",\"Điều hòa\",\"Smart TV 65\\\"\",\"Mini bar\",\"Phòng khách\",\"Phòng ngủ riêng\",\"Jacuzzi\",\"Bồn tắm cao cấp\"]",
                         ImageUrl = "/images/rooms/vip-1.jpg",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
@@ -87,31 +87,31 @@ namespace QuanLyKhachSan.Data
                     new RoomType
                     {
                         Name = "President Suite",
-                        Description = "Phong President xa hoa nhat, view tuyen dep, dich vu VIP",
+                        Description = "Phòng President xa hoa nhất, view tuyệt đẹp, dịch vụ VIP",
                         BasePrice = 3600000m,
                         MaxGuests = 6,
-                        Amenities = "[\"Wifi toc do cao\",\"Dieu hoa\",\"Smart TV 75\\\"\",\"Mini bar\",\"Phong khach lon\",\"2 Phong ngu\",\"Jacuzzi\",\"Sauna\",\"Butler 24/7\"]",
+                        Amenities = "[\"Wifi tốc độ cao\",\"Điều hòa\",\"Smart TV 75\\\"\",\"Mini bar\",\"Phòng khách lớn\",\"2 Phòng ngủ\",\"Jacuzzi\",\"Sauna\",\"Butler 24/7\"]",
                         ImageUrl = "/images/hotel-assets/rooms/vip-room.png",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     },
-                    // Phong VIP Luxury - ha tang sang trong, gia 6.7 trieu/doi
+                    // Phòng VIP Luxury - hạ tầng sang trọng, giá 6.7 triệu/đêm
                     new RoomType
                     {
                         Name = "VIP Luxury",
-                        Description = "Phong VIP Luxury ha dang, co view tuyen dep, dich vu cao cap 5 sao",
+                        Description = "Phòng VIP Luxury hạng sang, có view tuyệt đẹp, dịch vụ cao cấp 5 sao",
                         BasePrice = 6700000m,
                         MaxGuests = 4,
-                        Amenities = "[\"Wifi toc do cao\",\"Dieu hoa\",\"Smart TV 75 inch\",\"Mini bar\",\"Phong khach\",\"Phong ngu\",\"Jacuzzi\",\"Butler 24/7\",\"Champagne mien phi\"]",
+                        Amenities = "[\"Wifi tốc độ cao\",\"Điều hòa\",\"Smart TV 75 inch\",\"Mini bar\",\"Phòng khách\",\"Phòng ngủ\",\"Jacuzzi\",\"Butler 24/7\",\"Champagne miễn phí\"]",
                         ImageUrl = "/images/hotel-assets/rooms/vip-luxury.png",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     },
-                    // Phong test gia 10,000 VND - chi dung de test thanh toan SePay
+                    // Phòng test giá 10,000 VND - chỉ dùng để test thanh toán SePay
                     new RoomType
                     {
                         Name = "Test Room",
-                        Description = "Phong test gia 10,000 VND - chi dung de test thanh toan",
+                        Description = "Phòng test giá 10,000 VND - chỉ dùng để test thanh toán",
                         BasePrice = 10000m,
                         MaxGuests = 1,
                         Amenities = "[\"Wifi\"]",
@@ -122,44 +122,44 @@ namespace QuanLyKhachSan.Data
                 };
                 context.RoomTypes.AddRange(roomTypes);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} loai phong", roomTypes.Count);
+                logger.LogInformation("Đã tạo {Count} loại phòng", roomTypes.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 2. TAO PHONG (Rooms) - moi tang 4 phong
+                // 2. TẠO PHÒNG (Rooms) - mỗi tầng 4 phòng
                 // ════════════════════════════════════════════════════════
                 var rooms = new List<Room>();
                 var roomNumbers = new[]
                 {
-                    // Tang 1 - Standard
+                    // Tầng 1 - Standard
                     ("101", 1, 1, RoomStatus.Available),
                     ("102", 1, 1, RoomStatus.Available),
                     ("103", 1, 2, RoomStatus.Available),
                     ("104", 1, 2, RoomStatus.Occupied),
-                    // Tang 2 - Superior
+                    // Tầng 2 - Superior
                     ("201", 2, 2, RoomStatus.Available),
                     ("202", 2, 2, RoomStatus.Cleaning),
                     ("203", 2, 3, RoomStatus.Available),
                     ("204", 2, 3, RoomStatus.Occupied),
-                    // Tang 3 - Deluxe
+                    // Tầng 3 - Deluxe
                     ("301", 3, 3, RoomStatus.Available),
                     ("302", 3, 3, RoomStatus.Available),
                     ("303", 3, 4, RoomStatus.Maintenance),
                     ("304", 3, 4, RoomStatus.Occupied),
-                    // Tang 4 - Suite
+                    // Tầng 4 - Suite
                     ("401", 4, 4, RoomStatus.Available),
                     ("402", 4, 4, RoomStatus.Available),
                     ("403", 4, 5, RoomStatus.Available),
                     ("404", 4, 5, RoomStatus.Occupied),
 
-                    // Tang 5 - President Suite (3 phong)
+                    // Tầng 5 - President Suite (3 phòng)
                     ("501", 5, 5, RoomStatus.Available),
                     ("502", 5, 5, RoomStatus.Available),
                     ("503", 5, 5, RoomStatus.Occupied),
-                    // Tang 6 - VIP Luxury (3 phong)
+                    // Tầng 6 - VIP Luxury (3 phòng)
                     ("601", 6, 6, RoomStatus.Available),
                     ("602", 6, 6, RoomStatus.Available),
                     ("603", 6, 6, RoomStatus.Occupied),
-                    // Tang 7 - Test Room
+                    // Tầng 7 - Test Room
                     ("701", 7, 7, RoomStatus.Available),
                 };
 
@@ -176,10 +176,10 @@ namespace QuanLyKhachSan.Data
                 }
                 context.Rooms.AddRange(rooms);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} phong", rooms.Count);
+                logger.LogInformation("Đã tạo {Count} phòng", rooms.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 4. TAO NGUOI DUNG (Users)
+                // 4. TẠO NGƯỜI DÙNG (Users)
                 // ════════════════════════════════════════════════════════
                 var users = new List<User>
                 {
@@ -200,7 +200,7 @@ namespace QuanLyKhachSan.Data
                     {
                         Username = "manager",
                         Password = BCrypt.Net.BCrypt.HashPassword("Manager@123", 10),
-                        FullName = "Tran Thi Quan Ly",
+                        FullName = "Trần Thị Quản Lý",
                         Role = UserRole.Manager,
                         Email = "manager@sunhotel.vn",
                         Phone = "0902345678",
@@ -212,7 +212,7 @@ namespace QuanLyKhachSan.Data
                     {
                         Username = "reception1",
                         Password = BCrypt.Net.BCrypt.HashPassword("Ltan@123456", 10),
-                        FullName = "Le Thi Le Tan",
+                        FullName = "Lê Thị Lễ Tân",
                         Role = UserRole.Receptionist,
                         Email = "reception1@sunhotel.vn",
                         Phone = "0903456789",
@@ -235,7 +235,7 @@ namespace QuanLyKhachSan.Data
                     {
                         Username = "housekeep1",
                         Password = BCrypt.Net.BCrypt.HashPassword("Hkeep@123456", 10),
-                        FullName = "Pham Thi Buong",
+                        FullName = "Phạm Thị Buồng",
                         Role = UserRole.Housekeeping,
                         Email = "housekeep1@sunhotel.vn",
                         Phone = "0905678901",
@@ -291,10 +291,10 @@ namespace QuanLyKhachSan.Data
                 };
                 context.Users.AddRange(users);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} nguoi dung", users.Count);
+                logger.LogInformation("Đã tạo {Count} người dùng", users.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 5. TAO BOOKING MAU
+                // 5. TẠO BOOKING MẪU
                 // ════════════════════════════════════════════════════════
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var adminUser = users[0];
@@ -302,7 +302,7 @@ namespace QuanLyKhachSan.Data
 
                 var bookings = new List<Booking>
                 {
-                    // Booking da check-in (dang o)
+                    // Booking đã check-in (đang ở)
                     new Booking
                     {
                         BookingCode = "BK" + DateTime.UtcNow.ToString("yyMMdd") + "001",
@@ -321,7 +321,7 @@ namespace QuanLyKhachSan.Data
                         CreatedBy = receptionUser.Id,
                         CreatedAt = DateTime.UtcNow.AddDays(-3)
                     },
-                    // Booking da check-in 2
+                    // Booking đã check-in 2
                     new Booking
                     {
                         BookingCode = "BK" + DateTime.UtcNow.ToString("yyMMdd") + "002",
@@ -374,7 +374,7 @@ namespace QuanLyKhachSan.Data
                         CreatedBy = receptionUser.Id,
                         CreatedAt = DateTime.UtcNow.AddHours(-5)
                     },
-                    // Booking confirmed (sap den)
+                    // Booking confirmed (sắp đến)
                     new Booking
                     {
                         BookingCode = "BK" + DateTime.UtcNow.ToString("yyMMdd") + "005",
@@ -412,14 +412,14 @@ namespace QuanLyKhachSan.Data
                 };
                 context.Bookings.AddRange(bookings);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} booking", bookings.Count);
+                logger.LogInformation("Đã tạo {Count} booking", bookings.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 5. TAO HOA DON MAU
+                // 5. TẠO HÓA ĐƠN MẪU
                 // ════════════════════════════════════════════════════════
                 var invoices = new List<Invoice>
                 {
-                    // Invoice da thanh toan cho booking 1
+                    // Invoice đã thanh toán cho booking 1
                     new Invoice
                     {
                         BookingId = bookings[0].Id,
@@ -434,7 +434,7 @@ namespace QuanLyKhachSan.Data
                         CreatedById = receptionUser.Id,
                         CreatedAt = DateTime.UtcNow.AddDays(-2)
                     },
-                    // Invoice da thanh toan cho booking 2
+                    // Invoice đã thanh toán cho booking 2
                     new Invoice
                     {
                         BookingId = bookings[1].Id,
@@ -449,7 +449,7 @@ namespace QuanLyKhachSan.Data
                         CreatedById = receptionUser.Id,
                         CreatedAt = DateTime.UtcNow.AddDays(-1)
                     },
-                    // Invoice chua thanh toan cho booking 3
+                    // Invoice chưa thanh toán cho booking 3
                     new Invoice
                     {
                         BookingId = bookings[2].Id,
@@ -463,7 +463,7 @@ namespace QuanLyKhachSan.Data
                         CreatedById = receptionUser.Id,
                         CreatedAt = DateTime.UtcNow
                     },
-                    // Invoice chua thanh toan cho booking 5
+                    // Invoice chưa thanh toán cho booking 5
                     new Invoice
                     {
                         BookingId = bookings[4].Id,
@@ -480,10 +480,10 @@ namespace QuanLyKhachSan.Data
                 };
                 context.Invoices.AddRange(invoices);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} hoa don", invoices.Count);
+                logger.LogInformation("Đã tạo {Count} hóa đơn", invoices.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 6. TAO DICH VU MAU
+                // 6. TẠO DỊCH VỤ MẪU
                 // ════════════════════════════════════════════════════════
                 var services = new List<Service>
                 {
@@ -491,7 +491,7 @@ namespace QuanLyKhachSan.Data
                     new Service
                     {
                         BookingId = bookings[0].Id,
-                        ServiceName = "Giat uoc",
+                        ServiceName = "Giặt ủi",
                         ServiceType = ServiceType.Laundry,
                         Quantity = 3,
                         UnitPrice = 15000m,
@@ -501,7 +501,7 @@ namespace QuanLyKhachSan.Data
                     new Service
                     {
                         BookingId = bookings[0].Id,
-                        ServiceName = "Nuoc uong minibar",
+                        ServiceName = "Nước uống minibar",
                         ServiceType = ServiceType.Minibar,
                         Quantity = 2,
                         UnitPrice = 25000m,
@@ -512,7 +512,7 @@ namespace QuanLyKhachSan.Data
                     new Service
                     {
                         BookingId = bookings[1].Id,
-                        ServiceName = " buffet sang",
+                        ServiceName = "Buffet sáng",
                         ServiceType = ServiceType.Breakfast,
                         Quantity = 4,
                         UnitPrice = 180000m,
@@ -522,7 +522,7 @@ namespace QuanLyKhachSan.Data
                     new Service
                     {
                         BookingId = bookings[1].Id,
-                        ServiceName = "Di chuyen san bay",
+                        ServiceName = "Di chuyển sân bay",
                         ServiceType = ServiceType.Transport,
                         Quantity = 1,
                         UnitPrice = 250000m,
@@ -532,10 +532,10 @@ namespace QuanLyKhachSan.Data
                 };
                 context.Services.AddRange(services);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} dich vu", services.Count);
+                logger.LogInformation("Đã tạo {Count} dịch vụ", services.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 7. TAO TICKET MAU
+                // 7. TẠO TICKET MẪU
                 // ════════════════════════════════════════════════════════
                 var housekeepingUser = users[4];
                 var maintenanceUser = users[6];
@@ -545,9 +545,9 @@ namespace QuanLyKhachSan.Data
                     new Ticket
                     {
                         TicketNumber = "TK-" + DateTime.UtcNow.ToString("yyyyMMdd") + "-001",
-                        RoomId = rooms[5].Id, // Room 202 - dang don dep
+                        RoomId = rooms[5].Id, // Room 202 - đang dọn dẹp
                         Type = TicketType.Housekeeping,
-                        Description = "Don dep phong sau khi khach tra",
+                        Description = "Dọn dẹp phòng sau khi khách trả",
                         Priority = TicketPriority.Medium,
                         Status = TicketStatus.Open,
                         ReportedById = receptionUser.Id,
@@ -557,9 +557,9 @@ namespace QuanLyKhachSan.Data
                     new Ticket
                     {
                         TicketNumber = "TK-" + DateTime.UtcNow.ToString("yyyyMMdd") + "-002",
-                        RoomId = rooms[10].Id, // Room 303 - bao tri
+                        RoomId = rooms[10].Id, // Room 303 - bảo trì
                         Type = TicketType.Maintenance,
-                        Description = "May lanh khong lanh, can kiểm tra",
+                        Description = "Máy lạnh không lạnh, cần kiểm tra",
                         Priority = TicketPriority.High,
                         Status = TicketStatus.InProgress,
                         ReportedById = receptionUser.Id,
@@ -571,22 +571,22 @@ namespace QuanLyKhachSan.Data
                         TicketNumber = "TK-" + DateTime.UtcNow.ToString("yyyyMMdd") + "-003",
                         RoomId = rooms[0].Id, // Room 101
                         Type = TicketType.Maintenance,
-                        Description = "Den phong chạp, can thay bong",
+                        Description = "Đèn phòng chập, cần thay bóng",
                         Priority = TicketPriority.Low,
                         Status = TicketStatus.Resolved,
                         ReportedById = receptionUser.Id,
                         AssignedToId = maintenanceUser.Id,
-                        ResolutionNotes = "Da thay bong den moi",
+                        ResolutionNotes = "Đã thay bóng đèn mới",
                         ResolvedAt = DateTime.UtcNow.AddHours(-2),
                         CreatedAt = DateTime.UtcNow.AddDays(-2)
                     }
                 };
                 context.Tickets.AddRange(tickets);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} ticket", tickets.Count);
+                logger.LogInformation("Đã tạo {Count} ticket", tickets.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 8. TAO AUDIT LOG MAU
+                // 8. TẠO AUDIT LOG MẪU
                 // ════════════════════════════════════════════════════════
                 var auditLogs = new List<AuditLog>
                 {
@@ -629,17 +629,17 @@ namespace QuanLyKhachSan.Data
                 };
                 context.AuditLogs.AddRange(auditLogs);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tao {Count} audit log", auditLogs.Count);
+                logger.LogInformation("Đã tạo {Count} audit log", auditLogs.Count);
 
-                logger.LogInformation("Hoan tat khoi tao du lieu mau!");
+                logger.LogInformation("Hoàn tất khởi tạo dữ liệu mẫu!");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Loi khi khoi tao SeedData. Thu fix schema va thu lai...");
+                logger.LogError(ex, "Lỗi khi khởi tạo SeedData. Thử fix schema và thử lại...");
                 // Thử fix schema bằng raw SQL rồi khởi tạo lại
                 try
                 {
-#pragma warning disable EF1002 // Chi hardcode table/column name, khong co user input
+#pragma warning disable EF1002 // Chỉ hardcode table/column name, không có user input
                     await context.Database.ExecuteSqlRawAsync(@"
                         DECLARE @sql NVARCHAR(MAX) = N'';
                         SELECT @sql += N'ALTER TABLE [dbo].[booking] DROP CONSTRAINT ' + QUOTENAME(dc.name) + ';'
@@ -650,9 +650,9 @@ namespace QuanLyKhachSan.Data
                         ALTER TABLE [dbo].[booking] ALTER COLUMN booking_code NVARCHAR(20) NOT NULL;
                     ");
 #pragma warning restore EF1002
-                    logger.LogInformation("Da fix booking_code column");
+                    logger.LogInformation("Đã fix booking_code column");
 
-#pragma warning disable EF1002 // Chi hardcode table/column name, khong co user input
+#pragma warning disable EF1002 // Chỉ hardcode table/column name, không có user input
                     await context.Database.ExecuteSqlRawAsync(@"
                         DECLARE @sql NVARCHAR(MAX) = N'';
                         SELECT @sql += N'ALTER TABLE [dbo].[ticket] DROP CONSTRAINT ' + QUOTENAME(dc.name) + ';'
@@ -663,21 +663,21 @@ namespace QuanLyKhachSan.Data
                         ALTER TABLE [dbo].[ticket] ALTER COLUMN ticket_number NVARCHAR(30) NOT NULL;
                     ");
 #pragma warning restore EF1002
-                    logger.LogInformation("Da fix ticket_number column");
+                    logger.LogInformation("Đã fix ticket_number column");
 
                     // Retry initialization from the beginning
                     return; // Exit gracefully - let next run create proper data
                 }
                 catch (Exception fixEx)
                 {
-                    logger.LogError(fixEx, "Khong the fix schema, can xoa database thu cong");
+                    logger.LogError(fixEx, "Không thể fix schema, cần xóa database thủ công");
                 }
             }
         }
 
         /// <summary>
-        /// Fix user roles in existing database - chi chay 1 lan khi phat hien role sai
-        /// Neu phat hien role khong khop -> throw exception ngay lap tuc de stop app
+        /// Fix user roles in existing database - chỉ chạy 1 lần khi phát hiện role sai
+        /// Nếu phát hiện role không khớp -> throw exception ngay lập tức để stop app
         /// </summary>
         private static async Task FixUserRolesAsync(SunHotelDbContext context, ILogger logger)
         {
@@ -697,16 +697,16 @@ namespace QuanLyKhachSan.Data
             var usersToFix = context.Users.Where(u => roleMapping.Keys.Contains(u.Username)).ToList();
             if (!usersToFix.Any())
             {
-                logger.LogWarning("CRITICAL: Khong tim thay bat ky tai khoan test nao trong database!");
+                logger.LogWarning("CRITICAL: Không tìm thấy bất kỳ tài khoản test nào trong database!");
                 throw new InvalidOperationException(
-                    "CRITICAL: Database thieu tai khoan test! " +
-                    "Vui long chay SeedData moi lan dau tien bang cach xoa toan bo bang User.");
+                    "CRITICAL: Database thiếu tài khoản test! " +
+                    "Vui lòng chạy SeedData mỗi lần đầu tiên bằng cách xóa toàn bộ bảng User.");
             }
 
             var invalidUsers = usersToFix.Where(u => u.Role != roleMapping[u.Username]).ToList();
             if (invalidUsers.Any())
             {
-                // Tu dong fix role sai thay vi throw - dam bao app van chay duoc
+                // Tự động fix role sai thay vì throw - đảm bảo app vẫn chạy được
                 foreach (var user in invalidUsers)
                 {
                     var oldRole = user.Role.ToString();
@@ -715,7 +715,7 @@ namespace QuanLyKhachSan.Data
                         user.Username, oldRole, user.Role);
                 }
                 await context.SaveChangesAsync();
-                logger.LogInformation("Da tu dong fix {Count} tai khoan co role sai", invalidUsers.Count);
+                logger.LogInformation("Đã tự động fix {Count} tài khoản có role sai", invalidUsers.Count);
             }
 
             logger.LogInformation("All {Count} test user roles are correct", usersToFix.Count);

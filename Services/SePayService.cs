@@ -39,7 +39,7 @@ namespace QuanLyKhachSan.Services
             _httpClient = new HttpClient();
         }
 
-        #region ─── Cau hinh ─────────────────────────────────────────────────
+        #region ─── Cấu hình ─────────────────────────────────────────────────
 
         private string MerchantId => _config["SePay:MerchantId"] ?? "";
         private string SecretKey => _config["SePay:SecretKey"] ?? "";
@@ -61,18 +61,24 @@ namespace QuanLyKhachSan.Services
         private string ErrorUrl => _config["SePay:ErrorUrl"] ?? "http://localhost:5000/Payment/SePayError";
         private string CancelUrl => _config["SePay:CancelUrl"] ?? "http://localhost:5000/Payment/SePayCancel";
 
+        private string BuildCallbackUrl(string baseUrl, string invoiceNumber)
+        {
+            var sep = baseUrl.Contains('?') ? "&" : "?";
+            return $"{baseUrl}{sep}inv={Uri.EscapeDataString(invoiceNumber)}";
+        }
+
         private int PollingIntervalSeconds => int.Parse(_config["SePay:PollingIntervalSeconds"] ?? "60");
         private int PollingMaxMinutes => int.Parse(_config["SePay:PollingMaxMinutes"] ?? "5");
 
         #endregion
 
-        #region ─── Tao thanh toan ─────────────────────────────────────────
+        #region ─── Tạo thanh toán ─────────────────────────────────────────
 
         public async Task<SePayCheckoutResult> CreatePayment(Invoice invoice)
         {
             var booking = invoice.Booking;
             if (booking == null)
-                return new SePayCheckoutResult { Success = false, ErrorMessage = "Hoa don khong co thong tin booking" };
+                return new SePayCheckoutResult { Success = false, ErrorMessage = "Hóa đơn không có thông tin booking" };
 
             var orderInitResult = await InitOrder(invoice);
             if (!orderInitResult.Success)
@@ -108,7 +114,7 @@ namespace QuanLyKhachSan.Services
             var booking = invoice.Booking!;
 
             var orderInvoiceNumber = $"SP-{invoice.InvoiceNumber}";
-            var orderDescription = $"Thanh toan phong KS-{booking.BookingCode}";
+            var orderDescription = $"Thanh toán phòng KS-{booking.BookingCode}";
             var customerId = booking.Email ?? booking.Phone ?? "GUEST";
 
             var fields = NormalizeFields(new Dictionary<string, string?>
@@ -121,9 +127,9 @@ namespace QuanLyKhachSan.Services
                 ["order_invoice_number"] = orderInvoiceNumber,
                 ["order_description"] = orderDescription,
                 ["customer_id"] = customerId,
-                ["success_url"] = SuccessUrl,
-                ["error_url"] = ErrorUrl,
-                ["cancel_url"] = CancelUrl
+                ["success_url"] = BuildCallbackUrl(SuccessUrl, invoice.InvoiceNumber),
+                ["error_url"] = BuildCallbackUrl(ErrorUrl, invoice.InvoiceNumber),
+                ["cancel_url"] = BuildCallbackUrl(CancelUrl, invoice.InvoiceNumber)
             });
 
             var signature = CreateSignature(fields);
@@ -164,27 +170,29 @@ namespace QuanLyKhachSan.Services
             if (!string.IsNullOrEmpty(redirectUrl))
             {
                 _logger.LogInformation("SePay redirect to: {RedirectUrl}", redirectUrl);
+                var (extractedOrderId, extractedOrderCode) = ExtractOrderInfoFromUrl(redirectUrl);
                 return new SePayCheckoutResult
                 {
                     Success = true,
-                    OrderId = "",
-                    OrderCode = "",
+                    OrderId = extractedOrderId,
+                    OrderCode = extractedOrderCode,
                     CheckoutUrl = redirectUrl
                 };
             }
 
-            if (responseBody.Contains("CURRENT_URL") || responseBody.Contains("my.sepay.vn"))
+            if (responseBody.Contains("sepay.vn"))
             {
-                var match = Regex.Match(responseBody, @"https://my\.sepay\.vn/v1/checkout\?[^""&\s}\)\|]+");
+                var match = Regex.Match(responseBody, @"https://(?:pay(?:-sandbox)?|my)\.sepay\.vn/v1/checkout[?][^""'\s}\)\|]+");
                 if (match.Success)
                 {
                     var extractedUrl = match.Value;
                     _logger.LogInformation("SePay checkout URL extracted from HTML: {Url}", extractedUrl);
+                    var (extractedOrderId, extractedOrderCode) = ExtractOrderInfoFromUrl(extractedUrl);
                     return new SePayCheckoutResult
                     {
                         Success = true,
-                        OrderId = "",
-                        OrderCode = "",
+                        OrderId = extractedOrderId,
+                        OrderCode = extractedOrderCode,
                         CheckoutUrl = extractedUrl
                     };
                 }
@@ -193,11 +201,11 @@ namespace QuanLyKhachSan.Services
             var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
             if (!contentType.Contains("application/json"))
             {
-                _logger.LogWarning("SePay tra ve content-type={ContentType} thay vi JSON. Body={Body}", contentType, responseBody);
+                _logger.LogWarning("SePay trả về content-type={ContentType} thay vì JSON. Body={Body}", contentType, responseBody);
                 return new SePayCheckoutResult
                 {
                     Success = false,
-                    ErrorMessage = $"SePay API tra ve loi (HTTP {(int)response.StatusCode}). Vui long kiem tra config."
+                    ErrorMessage = $"SePay API trả về lỗi (HTTP {(int)response.StatusCode}). Vui lòng kiểm tra config."
                 };
             }
 
@@ -206,7 +214,7 @@ namespace QuanLyKhachSan.Services
                 return new SePayCheckoutResult
                 {
                     Success = false,
-                    ErrorMessage = $"SePay API loi: HTTP {(int)response.StatusCode} - {responseBody}"
+                    ErrorMessage = $"SePay API lỗi: HTTP {(int)response.StatusCode} - {responseBody}"
                 };
             }
 
@@ -223,7 +231,7 @@ namespace QuanLyKhachSan.Services
                     return new SePayCheckoutResult
                     {
                         Success = false,
-                        ErrorMessage = $"SePay khong tra ve checkoutUrl. Response: {responseBody}"
+                        ErrorMessage = $"SePay không trả về checkoutUrl. Response: {responseBody}"
                     };
                 }
 
@@ -237,18 +245,18 @@ namespace QuanLyKhachSan.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Loi parse response SePay: {Body}", responseBody);
+                _logger.LogError(ex, "Lỗi parse response SePay: {Body}", responseBody);
                 return new SePayCheckoutResult
                 {
                     Success = false,
-                    ErrorMessage = $"Loi parse response SePay: {ex.Message}"
+                    ErrorMessage = $"Lỗi parse response SePay: {ex.Message}"
                 };
             }
         }
 
         #endregion
 
-        #region ─── Kiem tra trang thai don hang ───────────────────────────
+        #region ─── Kiểm tra trạng thái đơn hàng ───────────────────────────
 
         public async Task<bool> CheckOrderStatus(string orderCode)
         {
@@ -256,33 +264,40 @@ namespace QuanLyKhachSan.Services
 
             try
             {
+                // Thử với /v1/order/{id} — SePay production dùng order_id (PAY...)
                 var url = $"{ApiUrl}/v1/order/{orderCode}";
                 var response = await SendApiRequestAsync(HttpMethod.Get, url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("SePay CheckOrderStatus failed: {StatusCode}", response.StatusCode);
-                    return false;
-                }
-
                 var body = await response.Content.ReadAsStringAsync();
-                var json = JsonSerializer.Deserialize<JsonElement>(body);
 
-                if (json.TryGetProperty("order", out var order))
+                _logger.LogInformation("SePay CheckOrderStatus: GET {Url} → {Status}, body={Body}",
+                    url, (int)response.StatusCode, body.Length > 200 ? body[..200] : body);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    var status = order.TryGetProperty("order_status", out var s) ? s.GetString() : null;
+                    var json = JsonSerializer.Deserialize<JsonElement>(body);
+
+                    // Thử lấy status từ cả 2 cấu trúc: { order: { order_status } } hoặc { order_status }
+                    string? status = null;
+                    if (json.TryGetProperty("order", out var orderNode))
+                        status = orderNode.TryGetProperty("order_status", out var s1) ? s1.GetString() : null;
+                    if (status == null)
+                        status = json.TryGetProperty("order_status", out var s2) ? s2.GetString() : null;
+
+                    _logger.LogInformation("SePay CheckOrderStatus: order_status={Status} for {OrderCode}", status, orderCode);
+
                     if (status == "CAPTURED")
-                    {
-                        _logger.LogInformation("SePay order confirmed via polling: {OrderCode}", orderCode);
                         return true;
-                    }
+                }
+                else
+                {
+                    _logger.LogWarning("SePay CheckOrderStatus failed: {StatusCode} for {OrderCode}", response.StatusCode, orderCode);
                 }
 
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Loi khi kiem tra trang thai SePay order: {OrderCode}", orderCode);
+                _logger.LogError(ex, "Lỗi khi kiểm tra trạng thái SePay order: {OrderCode}", orderCode);
                 return false;
             }
         }
@@ -320,13 +335,16 @@ namespace QuanLyKhachSan.Services
 
         #endregion
 
-        #region ─── Xu ly IPN webhook ─────────────────────────────────────
+        #region ─── Xử lý IPN webhook ─────────────────────────────────────
 
         public async Task<bool> ProcessIpn(SePayIpnPayload payload)
         {
             _logger.LogInformation(
-                "SePay IPN received: Type={Type}, OrderId={OrderId}, Status={Status}",
-                payload.NotificationType, payload.Order?.OrderId, payload.Order?.OrderStatus);
+                "SePay IPN received: Type={Type}, OrderId={OrderId}, Status={Status}, InvoiceNumber={InvNum}",
+                payload.NotificationType,
+                payload.Order?.OrderId,
+                payload.Order?.OrderStatus,
+                payload.Order?.OrderInvoiceNumber);
 
             if (payload.NotificationType != "ORDER_PAID")
             {
@@ -337,13 +355,16 @@ namespace QuanLyKhachSan.Services
             var orderInvoiceNumber = payload.Order?.OrderInvoiceNumber;
             if (string.IsNullOrEmpty(orderInvoiceNumber))
             {
-                _logger.LogWarning("SePay IPN: khong co order_invoice_number");
+                _logger.LogWarning("SePay IPN: không có order_invoice_number");
                 return false;
             }
 
-            var invoiceNumber = orderInvoiceNumber.StartsWith("SP-")
+            // Strip prefix SP- nếu có
+            var invoiceNumber = orderInvoiceNumber.StartsWith("SP-", StringComparison.OrdinalIgnoreCase)
                 ? orderInvoiceNumber[3..]
                 : orderInvoiceNumber;
+
+            _logger.LogInformation("SePay IPN: tìm invoice={InvoiceNumber}", invoiceNumber);
 
             var invoice = await _db.Invoices
                 .Include(i => i.Booking).ThenInclude(b => b.RoomType)
@@ -352,21 +373,30 @@ namespace QuanLyKhachSan.Services
 
             if (invoice == null)
             {
-                _logger.LogWarning("SePay IPN: khong tim thay hoa don {InvoiceNumber}", invoiceNumber);
+                _logger.LogWarning("SePay IPN: không tìm thấy hóa đơn {InvoiceNumber} (raw={Raw})", invoiceNumber, orderInvoiceNumber);
                 return false;
             }
 
             if (invoice.PaymentStatus == PaymentStatus.Paid)
             {
-                _logger.LogInformation("SePay IPN: hoa don {InvoiceNumber} da duoc thanh toan", invoiceNumber);
+                _logger.LogInformation("SePay IPN: hóa đơn {InvoiceNumber} đã được thanh toán trước đó", invoiceNumber);
                 return true;
             }
 
-            var paidAmount = decimal.TryParse(payload.Transaction?.TransactionAmount ?? "0", out var amt) ? amt : 0;
+            var paidAmount = decimal.TryParse(
+                payload.Transaction?.TransactionAmount ?? "0",
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var amt) ? amt : 0;
+
+            _logger.LogInformation(
+                "SePay IPN: xác nhận thanh toán Invoice={InvoiceNumber}, PaidAmount={Paid}, Expected={Expected}",
+                invoiceNumber, paidAmount, invoice.TotalAmount);
+
             if (paidAmount < invoice.TotalAmount)
             {
                 _logger.LogWarning(
-                    "SePay IPN: so tien khong khop. Expected={Expected}, Received={Received}",
+                    "SePay IPN: số tiền thấp hơn dự kiến. Expected={Expected}, Received={Received} — vẫn xác nhận",
                     invoice.TotalAmount, paidAmount);
             }
 
@@ -374,7 +404,7 @@ namespace QuanLyKhachSan.Services
             await ConfirmSePayPayment(invoice, transactionId, "IPN_WEBHOOK");
 
             _logger.LogInformation(
-                "SePay payment confirmed via IPN: Invoice={InvoiceNumber}, TransId={TransId}",
+                "SePay IPN: đã xác nhận thành công Invoice={InvoiceNumber}, TransId={TransId}",
                 invoice.InvoiceNumber, transactionId);
 
             return true;
@@ -382,7 +412,7 @@ namespace QuanLyKhachSan.Services
 
         #endregion
 
-        #region ─── Xac nhan thanh toan ─────────────────────────────────
+        #region ─── Xác nhận thanh toán ─────────────────────────────────
 
         private async Task ConfirmSePayPayment(Invoice invoice, string transactionId, string source)
         {
@@ -393,6 +423,13 @@ namespace QuanLyKhachSan.Services
             invoice.SePayTransactionId = transactionId;
             invoice.SePayPaidAt = DateTime.UtcNow;
             invoice.SePayPollingExpiresAt = null;
+
+            // Cập nhật trạng thái booking thành Confirmed nếu đang Pending
+            var booking = invoice.Booking;
+            if (booking != null && booking.Status == BookingStatus.Pending)
+            {
+                booking.Status = BookingStatus.Confirmed;
+            }
 
             _db.AuditLogs.Add(new AuditLog
             {
@@ -410,7 +447,6 @@ namespace QuanLyKhachSan.Services
 
             await _db.SaveChangesAsync();
 
-            var booking = invoice.Booking;
             if (booking != null)
             {
                 var checkInTime = booking.ActualCheckIn
@@ -455,6 +491,22 @@ namespace QuanLyKhachSan.Services
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(SecretKey));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawSignature));
             return Convert.ToBase64String(hash);
+        }
+
+        private static (string OrderId, string OrderCode) ExtractOrderInfoFromUrl(string url)
+        {
+            try
+            {
+                var uri = new Uri(url);
+                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                var orderId = query["order_id"] ?? query["orderId"] ?? "";
+                var orderCode = query["order_code"] ?? query["orderCode"] ?? "";
+                return (orderId, orderCode);
+            }
+            catch
+            {
+                return ("", "");
+            }
         }
 
         private static Dictionary<string, string?> NormalizeFields(Dictionary<string, string?> fields)

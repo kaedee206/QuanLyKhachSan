@@ -110,7 +110,7 @@ namespace QuanLyKhachSan.Services
             client.Connect();
 
             if (!client.IsConnected)
-                throw new InvalidOperationException("Khong the ket noi SFTP server");
+                throw new InvalidOperationException("Không thể kết nối SFTP server");
 
             var forwardedPort = new Renci.SshNet.ForwardedPortLocal("127.0.0.1", (uint)localPort, smtpHost, (uint)smtpPort);
             client.AddForwardedPort(forwardedPort);
@@ -147,7 +147,7 @@ namespace QuanLyKhachSan.Services
 
         public async Task SendBookingConfirmationEmail(Booking booking)
         {
-            var subject = $"Xac nhan dat phong - Ma {booking.BookingCode} | Sun Hotel";
+            var subject = $"Xác nhận đặt phòng - Mã {booking.BookingCode} | Sun Hotel";
             var nights = booking.CheckOutDate.DayNumber - booking.CheckInDate.DayNumber;
 
             var body = $@"
@@ -156,7 +156,7 @@ namespace QuanLyKhachSan.Services
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Xac nhan dat phong - Sun Hotel</title>
+    <title>Xác nhận đặt phòng - Sun Hotel</title>
 </head>
 <body style='margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f6f9;'>
     <table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f6f9;padding:30px 15px;'>
@@ -175,9 +175,9 @@ namespace QuanLyKhachSan.Services
                     <!-- Confirmation badge -->
                     <tr>
                         <td style='padding:30px 40px 0;text-align:center;'>
-                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ DAT PHONG THANH CONG</div>
-                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chao, <span style='color:#2d6a8f;'>{booking.GuestName}</span>!</h2>
-                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chung toi xac nhan dat phong cua quy khach thanh cong.<br>Don cua quy khach dang duoc xu ly va cho thanh toan.</p>
+                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ ĐẶT PHÒNG THÀNH CÔNG</div>
+                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chào, <span style='color:#2d6a8f;'>{booking.GuestName}</span>!</h2>
+                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chúng tôi xác nhận đặt phòng của quý khách thành công.<br>Đơn của quý khách đang được xử lý và chờ thanh toán.</p>
                         </td>
                     </tr>
 
@@ -187,44 +187,44 @@ namespace QuanLyKhachSan.Services
                             <table width='100%' cellpadding='0' cellspacing='0' style='background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;'>
                                 <tr>
                                     <td colspan='2' style='padding:15px 20px 10px;border-bottom:1px solid #e2e8f0;'>
-                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Thong tin dat phong</span>
+                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Thông tin đặt phòng</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ma dat phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Mã đặt phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.BookingCode}</p>
                                     </td>
                                     <td style='padding:10px 20px;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loai phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loại phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.RoomType?.Name ?? "N/A"}</p>
                                     </td>
                                 </tr>
                                 <tr style='background:#ffffff;'>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngay nhan phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngày nhận phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.CheckInDate:dd/MM/yyyy}</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngay tra phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngày trả phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.CheckOutDate:dd/MM/yyyy}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>So dem</p>
-                                        <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{nights} dem</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Số đêm</p>
+                                        <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{nights} đêm</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>So khach</p>
-                                        <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.NumGuests} nguoi</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Số khách</p>
+                                        <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.NumGuests} người</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td colspan='2' style='padding:15px 20px;border-top:2px solid #1a3a5c;background:#f0f7ff;'>
                                         <table width='100%' cellpadding='0' cellspacing='0'>
                                             <tr>
-                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tong thanh toan:</td>
+                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tổng thanh toán:</td>
                                                 <td align='right' style='color:#d4af37;font-size:22px;font-weight:800;'>{booking.TotalAmount:N0} VND</td>
                                             </tr>
                                         </table>
@@ -238,7 +238,7 @@ namespace QuanLyKhachSan.Services
                     <tr>
                         <td style='padding:15px 40px;'>
                             <div style='background:#fff8e1;border-left:4px solid #ffb300;padding:12px 16px;border-radius:0 6px 6px 0;'>
-                                <p style='margin:0;color:#795548;font-size:13px;line-height:1.6;'>📋 <strong>Luu y:</strong> Don dat phong dang cho xu ly. Vui long thanh toan de xac nhan dat phong. Sau khi thanh toan, quy khach se nhan duoc email thong báo co the check-in.</p>
+                                <p style='margin:0;color:#795548;font-size:13px;line-height:1.6;'>📋 <strong>Lưu ý:</strong> Đơn đặt phòng đang chờ xử lý. Vui lòng thanh toán để xác nhận đặt phòng. Sau khi thanh toán, quý khách sẽ nhận được email thông báo có thể check-in.</p>
                             </div>
                         </td>
                     </tr>
@@ -246,7 +246,7 @@ namespace QuanLyKhachSan.Services
                     <!-- Footer -->
                     <tr>
                         <td style='background:#1a3a5c;padding:25px 40px;text-align:center;'>
-                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cam on quy khach da chon <strong style='color:#ffffff;'>Sun Hotel</strong>!</p>
+                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cảm ơn quý khách đã chọn <strong style='color:#ffffff;'>Sun Hotel</strong>!</p>
                             <p style='color:#6b9fc4;margin:0;font-size:12px;'>📞 Hotline: 1900 1234  |  📧 noreply@sunhotel.vn  |  📍 123 Nguyen Hue, Q1, TP.HCM</p>
                         </td>
                     </tr>
@@ -267,11 +267,11 @@ namespace QuanLyKhachSan.Services
         public async Task SendPaymentConfirmationEmail(Invoice invoice)
         {
             var booking = invoice.Booking;
-            var guestName = booking?.GuestName ?? "Khach hang";
-            var roomNumber = booking?.Room?.RoomNumber ?? "Chua xep phong";
-            var roomTypeName = booking?.RoomType?.Name ?? "Chua xep loai phong";
+            var guestName = booking?.GuestName ?? "Khách hàng";
+            var roomNumber = booking?.Room?.RoomNumber ?? "Chưa xếp phòng";
+            var roomTypeName = booking?.RoomType?.Name ?? "Chưa xếp loại phòng";
 
-            var subject = $"Thanh toan thanh cong - Hoa don {invoice.InvoiceNumber} | Sun Hotel";
+            var subject = $"Thanh toán thành công - Hóa đơn {invoice.InvoiceNumber} | Sun Hotel";
 
             var paymentMethodDisplay = invoice.PaymentMethod.ToString();
 
@@ -281,7 +281,7 @@ namespace QuanLyKhachSan.Services
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Thanh toan thanh cong - Sun Hotel</title>
+    <title>Thanh toán thành công - Sun Hotel</title>
 </head>
 <body style='margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f6f9;'>
     <table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f6f9;padding:30px 15px;'>
@@ -300,9 +300,9 @@ namespace QuanLyKhachSan.Services
                     <!-- Success badge -->
                     <tr>
                         <td style='padding:30px 40px 0;text-align:center;'>
-                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ THANH TOAN THANH CONG</div>
-                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chao, <span style='color:#2d6a8f;'>{guestName}</span>!</h2>
-                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chung toi da nhan duoc thanh toan cua quy khach.</p>
+                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ THANH TOÁN THÀNH CÔNG</div>
+                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chào, <span style='color:#2d6a8f;'>{guestName}</span>!</h2>
+                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chúng tôi đã nhận được thanh toán của quý khách.</p>
                         </td>
                     </tr>
 
@@ -312,42 +312,42 @@ namespace QuanLyKhachSan.Services
                             <table width='100%' cellpadding='0' cellspacing='0' style='background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;'>
                                 <tr>
                                     <td colspan='2' style='padding:15px 20px 10px;border-bottom:1px solid #e2e8f0;'>
-                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Chi tiet hoa don</span>
+                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Chi tiết hóa đơn</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>So hoa don</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Số hóa đơn</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:700;'>{invoice.InvoiceNumber}</p>
                                     </td>
                                     <td style='padding:10px 20px;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loai phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loại phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:700;'>{roomTypeName}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:700;'>{roomNumber}</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phuong thuc</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phương thức</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:14px;'>{paymentMethodDisplay}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tien phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tiền phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:14px;'>{invoice.RoomCharge:N0} VND</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tien dich vu</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tiền dịch vụ</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:14px;'>{invoice.ServiceCharge:N0} VND</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Giam gia</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Giảm giá</p>
                                         <p style='margin:0;color:#e53935;font-size:14px;'>-{invoice.Discount:N0} VND</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
@@ -357,7 +357,7 @@ namespace QuanLyKhachSan.Services
                                     <td colspan='2' style='padding:15px 20px;border-top:2px solid #1a3a5c;background:#f0f7ff;'>
                                         <table width='100%' cellpadding='0' cellspacing='0'>
                                             <tr>
-                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tong thanh toan:</td>
+                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tổng thanh toán:</td>
                                                 <td align='right' style='color:#d4af37;font-size:22px;font-weight:800;'>{invoice.TotalAmount:N0} VND</td>
                                             </tr>
                                         </table>
@@ -370,7 +370,7 @@ namespace QuanLyKhachSan.Services
                     <!-- Footer -->
                     <tr>
                         <td style='background:#1a3a5c;padding:25px 40px;text-align:center;'>
-                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cam on quy khach da su dung dich vu cua <strong style='color:#ffffff;'>Sun Hotel</strong>!</p>
+                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cảm ơn quý khách đã sử dụng dịch vụ của <strong style='color:#ffffff;'>Sun Hotel</strong>!</p>
                             <p style='color:#6b9fc4;margin:0;font-size:12px;'>📞 Hotline: 1900 1234  |  📧 noreply@sunhotel.vn  |  📍 123 Nguyen Hue, Q1, TP.HCM</p>
                         </td>
                     </tr>
@@ -394,16 +394,16 @@ namespace QuanLyKhachSan.Services
             var booking = invoice.Booking;
             if (booking == null) return;
 
-            var guestName = booking.GuestName ?? "Khach hang";
-            var roomNumber = booking.Room?.RoomNumber ?? "Chua xep phong";
-            var roomTypeName = booking.RoomType?.Name ?? "Chua xep loai phong";
+            var guestName = booking.GuestName ?? "Khách hàng";
+            var roomNumber = booking.Room?.RoomNumber ?? "Chưa xếp phòng";
+            var roomTypeName = booking.RoomType?.Name ?? "Chưa xếp loại phòng";
 
             var vnZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
             var vnCheckIn = TimeZoneInfo.ConvertTimeFromUtc(checkInTime, vnZone);
             var formattedTime = vnCheckIn.ToString("HH:mm");
             var formattedDate = vnCheckIn.ToString("dd/MM/yyyy");
 
-            var subject = $"Hoan tat thanh toan - San sang check-in luc {formattedTime}, {formattedDate}";
+            var subject = $"Hoàn tất thanh toán - Sẵn sàng check-in lúc {formattedTime}, {formattedDate}";
 
             var paymentMethodDisplay = invoice.PaymentMethod.ToString();
 
@@ -413,7 +413,7 @@ namespace QuanLyKhachSan.Services
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Hoan tat thanh toan - Sun Hotel</title>
+    <title>Hoàn tất thanh toán - Sun Hotel</title>
 </head>
 <body style='margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f6f9;'>
     <table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f6f9;padding:30px 15px;'>
@@ -432,9 +432,9 @@ namespace QuanLyKhachSan.Services
                     <!-- Success badge -->
                     <tr>
                         <td style='padding:30px 40px 0;text-align:center;'>
-                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ THANH TOAN THANH CONG</div>
-                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chao, <span style='color:#2d6a8f;'>{guestName}</span>!</h2>
-                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chung toi xac nhan quy khach da hoan tat thu tuc thanh toan va co the tiep tuc check-in.</p>
+                            <div style='display:inline-block;background:#e8f5e9;color:#2e7d32;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;margin-bottom:15px;'>✓ THANH TOÁN THÀNH CÔNG</div>
+                            <h2 style='color:#1a3a5c;margin:0 0 5px;font-size:22px;'>Xin chào, <span style='color:#2d6a8f;'>{guestName}</span>!</h2>
+                            <p style='color:#666;margin:5px 0 0;font-size:14px;'>Chúng tôi xác nhận quý khách đã hoàn tất thủ tục thanh toán và có thể tiếp tục check-in.</p>
                         </td>
                     </tr>
 
@@ -442,7 +442,7 @@ namespace QuanLyKhachSan.Services
                     <tr>
                         <td style='padding:20px 40px 0;'>
                             <div style='background:linear-gradient(135deg,#e3f2fd,#f3e5f5);border-radius:10px;padding:20px;text-align:center;border:1px solid #bbdefb;'>
-                                <p style='margin:0 0 5px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px;'>Thoi gian check-in</p>
+                                <p style='margin:0 0 5px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px;'>Thời gian check-in</p>
                                 <p style='margin:0;color:#1a3a5c;font-size:28px;font-weight:800;'>{formattedTime}</p>
                                 <p style='margin:5px 0 0;color:#666;font-size:14px;'>{formattedDate}</p>
                             </div>
@@ -455,46 +455,46 @@ namespace QuanLyKhachSan.Services
                             <table width='100%' cellpadding='0' cellspacing='0' style='background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;'>
                                 <tr>
                                     <td colspan='2' style='padding:15px 20px 10px;border-bottom:1px solid #e2e8f0;'>
-                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Chi tiet dat phong</span>
+                                        <span style='color:#1a3a5c;font-weight:700;font-size:15px;'>Chi tiết đặt phòng</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ma dat phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Mã đặt phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{booking.BookingCode}</p>
                                     </td>
                                     <td style='padding:10px 20px;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loai phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Loại phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{roomTypeName}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:16px;font-weight:700;'>{roomNumber}</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>So hoa don</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Số hóa đơn</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:700;'>{invoice.InvoiceNumber}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngay nhan phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngày nhận phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:600;'>{booking.CheckInDate:dd/MM/yyyy}</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngay tra phong</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Ngày trả phòng</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:15px;font-weight:600;'>{booking.CheckOutDate:dd/MM/yyyy}</p>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style='padding:10px 20px;width:50%;border-right:1px solid #e2e8f0;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phuong thuc</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Phương thức</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:14px;'>{paymentMethodDisplay}</p>
                                     </td>
                                     <td style='padding:10px 20px;border-top:1px solid #e2e8f0;vertical-align:top;'>
-                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tien dich vu</p>
+                                        <p style='margin:0 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;'>Tiền dịch vụ</p>
                                         <p style='margin:0;color:#1a3a5c;font-size:14px;'>{invoice.ServiceCharge:N0} VND</p>
                                     </td>
                                 </tr>
@@ -502,7 +502,7 @@ namespace QuanLyKhachSan.Services
                                     <td colspan='2' style='padding:15px 20px;border-top:2px solid #1a3a5c;background:#f0f7ff;'>
                                         <table width='100%' cellpadding='0' cellspacing='0'>
                                             <tr>
-                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tong thanh toan:</td>
+                                                <td style='color:#1a3a5c;font-size:14px;font-weight:600;'>Tổng thanh toán:</td>
                                                 <td align='right' style='color:#d4af37;font-size:22px;font-weight:800;'>{invoice.TotalAmount:N0} VND</td>
                                             </tr>
                                         </table>
@@ -516,7 +516,7 @@ namespace QuanLyKhachSan.Services
                     <tr>
                         <td style='padding:15px 40px;'>
                             <div style='background:#fff8e1;border-left:4px solid #ffb300;padding:12px 16px;border-radius:0 6px 6px 0;'>
-                                <p style='margin:0;color:#795548;font-size:13px;line-height:1.6;'>📋 <strong>Luu y:</strong> Vui long den le tan truoc <strong>{formattedTime}</strong> de nhan phong va hoan tat thu tuc check-in. Neu can ho tro, vui long lien he <strong>Hotline: 1900 1234</strong>.</p>
+                                <p style='margin:0;color:#795548;font-size:13px;line-height:1.6;'>📋 <strong>Lưu ý:</strong> Vui lòng đến lễ tân trước <strong>{formattedTime}</strong> để nhận phòng và hoàn tất thủ tục check-in. Nếu cần hỗ trợ, vui lòng liên hệ <strong>Hotline: 1900 1234</strong>.</p>
                             </div>
                         </td>
                     </tr>
@@ -524,7 +524,7 @@ namespace QuanLyKhachSan.Services
                     <!-- Footer -->
                     <tr>
                         <td style='background:#1a3a5c;padding:25px 40px;text-align:center;'>
-                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cam on quy khach da chon <strong style='color:#ffffff;'>Sun Hotel</strong>! Chung toi rat mong duoc phuc vu quy khach.</p>
+                            <p style='color:#a8d4f0;margin:0 0 8px;font-size:13px;'>Cảm ơn quý khách đã chọn <strong style='color:#ffffff;'>Sun Hotel</strong>! Chúng tôi rất mong được phục vụ quý khách.</p>
                             <p style='color:#6b9fc4;margin:0;font-size:12px;'>📞 Hotline: 1900 1234  |  📧 noreply@sunhotel.vn  |  📍 123 Nguyen Hue, Q1, TP.HCM</p>
                         </td>
                     </tr>

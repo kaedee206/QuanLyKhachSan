@@ -8,10 +8,10 @@ out/
 logs/
 
 ## Sensitive config
-appsettings.json
-appsettings.Development.json
-appsettings.Production.json
-appsettings.Staging.json
+# appsettings.json (Uncomment if you want to include it, or mount it)
+# appsettings.Development.json
+# appsettings.Production.json
+# appsettings.Staging.json
 .env
 .env.*
 !.env.example

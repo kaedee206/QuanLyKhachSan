@@ -3,8 +3,8 @@ using QuanLyKhachSan.Services;
 namespace QuanLyKhachSan.BackgroundServices
 {
     /// <summary>
-    /// Background service tu dong kiem tra trang thai thanh toan SePay
-    /// Chay dinh ky (mac dinh 60s/lan) de xu ly cac hoa don chua duoc IPN webhook xac nhan
+    /// Background service tự động kiểm tra trạng thái thanh toán SePay
+    /// Chạy định kỳ (mặc định 60s/lần) để xử lý các hóa đơn chưa được IPN webhook xác nhận
     /// </summary>
     public class SePayPollingService : BackgroundService
     {
@@ -39,7 +39,7 @@ namespace QuanLyKhachSan.BackgroundServices
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Loi khi chay SePay polling");
+                    _logger.LogError(ex, "Lỗi khi chạy SePay polling");
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);

@@ -1,9 +1,8 @@
-version: "3.9"
-
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sunhotel_sqlserver
+    user: "0:0"
     environment:
       SA_PASSWORD: "${SA_PASSWORD}"
       ACCEPT_EULA: "Y"
@@ -13,11 +12,11 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -Q \"SELECT 1\" -No || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -Q \"SELECT 1\" -b -C || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -Q \"SELECT 1\" -b || exit 1"]
       interval: 15s
       timeout: 10s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 60s
 
   app:
     build:
@@ -32,24 +31,22 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SunHotelDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;Encrypt=false"
-      AppSettings__JwtSecret: "${JWT_SECRET}"
-      AppSettings__FrontendUrl: "${FRONTEND_URL:-http://localhost:5173}"
       SePay__MerchantId: "${SEPAY_MERCHANT_ID}"
       SePay__SecretKey: "${SEPAY_SECRET_KEY}"
       SePay__SuccessUrl: "${APP_BASE_URL}/Payment/SePaySuccess"
       SePay__ErrorUrl: "${APP_BASE_URL}/Payment/SePayError"
       SePay__CancelUrl: "${APP_BASE_URL}/Payment/SePayCancel"
-      SePay__IpnUrl: "${APP_BASE_URL}/Invoice/SePayIpn"
-      VietQR__BankId: "${VIETQR_BANK_ID}"
-      VietQR__AccountNo: "${VIETQR_ACCOUNT_NO}"
-      VietQR__AccountName: "${VIETQR_ACCOUNT_NAME}"
+      SePay__IpnUrl: "${APP_BASE_URL}/webhook/sepay"
+      AppSettings__JwtSecret: "${JWT_SECRET}"
       Email__User: "${EMAIL_USER}"
       Email__Password: "${EMAIL_PASSWORD}"
       Email__From: "${EMAIL_FROM}"
     volumes:
       - app_logs:/app/logs
+      - app_keys:/app/keys
     restart: unless-stopped
 
 volumes:
   sqlserver_data:
   app_logs:
+  app_keys:

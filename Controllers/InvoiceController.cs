@@ -205,7 +205,7 @@ namespace QuanLyKhachSan.Controllers
             return Content(success ? "{\"status\":\"OK\"}" : "{\"status\":\"FAIL\"}", "application/json");
         }
 
-        [HttpPost("SePayIpn")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> SePayIpn([FromBody] SePayIpnPayload payload)
         {

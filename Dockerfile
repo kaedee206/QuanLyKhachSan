@@ -14,8 +14,8 @@ RUN dotnet publish "QuanLyKhachSan.csproj" -c Release -o /app/publish --no-resto
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Create logs directory
-RUN mkdir -p /app/logs
+# Create required directories
+RUN mkdir -p /app/logs /app/keys
 
 # Copy published output
 COPY --from=build /app/publish .

@@ -1,6 +1,6 @@
 @model PaymentViewModel
 @{
-    ViewData["Title"] = "Thanh toan - Sun Hotel";
+    ViewData["Title"] = "Thanh toán - Sun Hotel";
     var booking = Model.Booking;
     var invoice = Model.Invoice;
     var nights = booking?.CheckOutDate.DayNumber - (booking?.CheckInDate.DayNumber ?? 0);
@@ -175,9 +175,9 @@
 <section class="payment-hero">
     <div class="container">
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.8rem; color: white; margin-bottom: 0.25rem;">
-            <i class="bi bi-credit-card-2-front me-2" style="color: #D4AF37;"></i>Thanh toan
+            <i class="bi bi-credit-card-2-front me-2" style="color: #D4AF37;"></i>Thanh toán
         </h1>
-        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Ma booking: <strong style="color: #D4AF37;">@Model.BookingCode</strong></p>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Mã booking: <strong style="color: #D4AF37;">@Model.BookingCode</strong></p>
     </div>
 </section>
 
@@ -190,26 +190,26 @@
 
                 <!-- Amount Summary -->
                 <div class="payment-card">
-                    <h5 class="payment-card-title"><i class="bi bi-wallet2" style="color: #D4AF37;"></i> So tien can thanh toan</h5>
+                    <h5 class="payment-card-title"><i class="bi bi-wallet2" style="color: #D4AF37;"></i> Số tiền cần thanh toán</h5>
                     <div class="amount-display">
-                        <p class="amount-label">Tong cong</p>
+                        <p class="amount-label">Tổng cộng</p>
                         <p class="amount-value">@Model.TotalAmount.ToString("N0") VND</p>
                     </div>
                 </div>
 
                 <!-- Payment Methods -->
                 <div class="payment-card">
-                    <h5 class="payment-card-title"><i class="bi bi-credit-card" style="color: #D4AF37;"></i> Chon phuong thuc thanh toan</h5>
+                    <h5 class="payment-card-title"><i class="bi bi-credit-card" style="color: #D4AF37;"></i> Chọn phương thức thanh toán</h5>
 
                     <!-- SePay QR -->
                     <div class="payment-method-card mb-3" id="method-sepay" onclick="selectMethod('sepay')">
-                        <span class="payment-method-badge recommended">Khuyen nghi</span>
+                        <span class="payment-method-badge recommended">Khuyến nghị</span>
                         <div class="payment-method-icon sepay">
                             <i class="bi bi-qr-code-scan"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="payment-method-name">Quet ma QR - SePay</div>
-                            <div class="payment-method-desc">Chuyen khoan ngan hang qua QR code. Ho tro 40+ ngan hang Viet Nam.</div>
+                            <div class="payment-method-name">Quét mã QR - SePay</div>
+                            <div class="payment-method-desc">Chuyển khoản ngân hàng qua QR code. Hỗ trợ 40+ ngân hàng Việt Nam.</div>
                         </div>
                         <div>
                             <i class="bi bi-check-circle-fill" id="check-sepay" style="color: #10b981; font-size: 1.4rem; display: none;"></i>
@@ -217,14 +217,14 @@
                     </div>
 
                     <!-- MoMo (Disabled) -->
-                    <div class="payment-method-card mb-3 disabled" id="method-momo" title="MoMo chua duoc cau hinh">
-                        <span class="payment-method-badge disabled-badge">Chua ho tro</span>
+                    <div class="payment-method-card mb-3 disabled" id="method-momo" title="MoMo chưa được cấu hình">
+                        <span class="payment-method-badge disabled-badge">Chưa hỗ trợ</span>
                         <div class="payment-method-icon momo">
                             <i class="bi bi-wallet"></i>
                         </div>
                         <div style="flex: 1;">
                             <div class="payment-method-name" style="color: #9ca3af;">MoMo E-Wallet</div>
-                            <div class="payment-method-desc">Thanh toan qua vi MoMo. Chuc nang dang phat trien.</div>
+                            <div class="payment-method-desc">Thanh toán qua ví MoMo. Chức năng đang phát triển.</div>
                         </div>
                         <div>
                             <i class="bi bi-lock-fill" style="color: #9ca3af; font-size: 1.1rem;"></i>
@@ -232,14 +232,14 @@
                     </div>
 
                     <!-- Cash (at hotel) -->
-                    <div class="payment-method-card mb-3 disabled" title="Thanh toan tai khach san">
-                        <span class="payment-method-badge disabled-badge">Khuyen nghi</span>
+                    <div class="payment-method-card mb-3 disabled" title="Thanh toán tại khách sạn">
+                        <span class="payment-method-badge disabled-badge">Khuyến nghị</span>
                         <div class="payment-method-icon bank">
                             <i class="bi bi-cash-stack"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="payment-method-name">Thanh toan tai khach san</div>
-                            <div class="payment-method-desc">Thanh toan truc tiep khi check-in.</div>
+                            <div class="payment-method-name">Thanh toán tại khách sạn</div>
+                            <div class="payment-method-desc">Thanh toán trực tiếp khi check-in.</div>
                         </div>
                     </div>
                 </div>
@@ -247,7 +247,7 @@
                 <!-- Pay Button -->
                 <button id="btn-pay" class="btn btn-pay-sepay" onclick="initiatePayment()">
                     <i class="bi bi-qr-code-scan me-2"></i>
-                    <span id="btn-text">Thanh toan bang QR SePay</span>
+                     <span id="btn-text">Thanh toán bằng QR SePay</span>
                     <span id="btn-spinner" class="spinner ms-2"></span>
                 </button>
 
@@ -255,8 +255,8 @@
                 <div class="notice-box mt-3">
                     <p style="margin: 0; font-size: 0.82rem; color: #795548; line-height: 1.6;">
                         <i class="bi bi-info-circle me-1"></i>
-                        <strong>Luu y:</strong> Sau khi thanh toan, he thong se tu dong xac nhan trong <strong>1-2 phut</strong>.
-                        Neu sau 5 phut chua nhan duoc email xac nhan, vui long kiem tra lai hoac lien he hotline.
+                        <strong>Lưu ý:</strong> Sau khi thanh toán, hệ thống sẽ tự động xác nhận trong <strong>1-2 phút</strong>.
+                        Nếu sau 5 phút chưa nhận được email xác nhận, vui lòng kiểm tra lại hoặc liên hệ hotline.
                     </p>
                 </div>
 
@@ -265,37 +265,37 @@
             <!-- Right: Booking Info -->
             <div class="col-lg-5">
                 <div class="payment-card">
-                    <h5 class="payment-card-title"><i class="bi bi-calendar-check" style="color: #D4AF37;"></i> Thong tin dat phong</h5>
+                    <h5 class="payment-card-title"><i class="bi bi-calendar-check" style="color: #D4AF37;"></i> Thông tin đặt phòng</h5>
                     @if (booking != null)
                     {
                         <div class="detail-row">
-                            <span class="detail-label">Ma booking</span>
+                            <span class="detail-label">Mã booking</span>
                             <span class="detail-value" style="color: #D4AF37;">@booking.BookingCode</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Loai phong</span>
+                            <span class="detail-label">Loại phòng</span>
                             <span class="detail-value">@booking.RoomType?.Name</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Ngay nhan phong</span>
+                            <span class="detail-label">Ngày nhận phòng</span>
                             <span class="detail-value">@booking.CheckInDate.ToString("dd/MM/yyyy")</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Ngay tra phong</span>
+                            <span class="detail-label">Ngày trả phòng</span>
                             <span class="detail-value">@booking.CheckOutDate.ToString("dd/MM/yyyy")</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">So dem</span>
-                            <span class="detail-value">@nights dem</span>
+                            <span class="detail-label">Số đêm</span>
+                            <span class="detail-value">@nights đêm</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">So khach</span>
-                            <span class="detail-value">@booking.NumGuests nguoi</span>
+                            <span class="detail-label">Số khách</span>
+                            <span class="detail-value">@booking.NumGuests người</span>
                         </div>
                         @if (!string.IsNullOrEmpty(booking.GuestName))
                         {
                             <div class="detail-row">
-                                <span class="detail-label">Khach hang</span>
+                                <span class="detail-label">Khách hàng</span>
                                 <span class="detail-value">@booking.GuestName</span>
                             </div>
                         }
@@ -307,7 +307,7 @@
                             </div>
                         }
                         <div class="detail-row" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 2px solid #f3f0ea;">
-                            <span style="font-weight: 700; color: #0F2540;">Tong cong</span>
+                            <span style="font-weight: 700; color: #0F2540;">Tổng cộng</span>
                             <span style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2rem; color: #D4AF37;">
                                 @Model.TotalAmount.ToString("N0") VND
                             </span>
@@ -318,7 +318,7 @@
                 <!-- Info Box -->
                 <div style="background: #F5F0E8; border-radius: 12px; padding: 1rem 1.25rem; border: 1px solid rgba(212,175,55,0.2);">
                     <h6 style="font-size: 0.8rem; font-weight: 700; color: #D4AF37; margin-bottom: 0.5rem;">
-                        <i class="bi bi-shield-check me-1"></i> Thong tin
+                        <i class="bi bi-shield-check me-1"></i> Thông tin
                     </h6>
                     <ul style="font-size: 0.8rem; color: #6b7280; margin: 0; padding-left: 1.2rem;">
                         <li>Check-in: <strong>14:00</strong> | Check-out: <strong>12:00</strong></li>
@@ -356,10 +356,10 @@
         var btn = document.getElementById('btn-pay');
         if (method === 'sepay') {
             btn.className = 'btn btn-pay-sepay';
-            btn.innerHTML = '<i class="bi bi-qr-code-scan me-2"></i><span id="btn-text">Thanh toan bang QR SePay</span><span id="btn-spinner" class="spinner ms-2"></span>';
+            btn.innerHTML = '<i class="bi bi-qr-code-scan me-2"></i><span id="btn-text">Thanh toán bằng QR SePay</span><span id="btn-spinner" class="spinner ms-2"></span>';
         } else {
             btn.className = 'btn btn-secondary';
-            btn.innerHTML = '<i class="bi bi-wallet me-2"></i><span>Phuong thuc nay chua ho tro</span>';
+            btn.innerHTML = '<i class="bi bi-wallet me-2"></i><span>Phương thức này chưa hỗ trợ</span>';
             btn.disabled = true;
         }
     }
@@ -372,7 +372,7 @@
 
         // Show loading
         btn.disabled = true;
-        if (btnText) btnText.textContent = 'Dang khoi tao thanh toan...';
+        if (btnText) btnText.textContent = 'Đang khởi tạo thanh toán...';
         if (spinner) spinner.style.display = 'inline-block';
 
         fetch('@Url.Action("InitializeSePay", "Payment")?invoiceNumber=' + encodeURIComponent(invoiceNumber), {
@@ -384,19 +384,19 @@
         })
         .then(function(response) {
             if (!response.ok) {
-                // Neu la redirect (401/403) -> chuyen huong ve trang login
+                // Nếu là redirect (401/403) -> chuyển hướng về trang login
                 if (response.status === 401 || response.status === 403) {
                     window.location.href = '/Auth/Login';
                     return null;
                 }
-                // Neu la loi khac -> doc text va throw
+                // Nếu là lỗi khác -> đọc text và throw
                 return response.text().then(function(text) {
-                    throw new Error(response.status + ': ' + (text.substring(0, 100) || 'Loi server'));
+                    throw new Error(response.status + ': ' + (text.substring(0, 100) || 'Lỗi server'));
                 });
             }
             var contentType = response.headers.get('content-type') || '';
             if (contentType.indexOf('application/json') === -1) {
-                throw new Error('Server tra ve HTML thay vi JSON. Co the can dang nhap lai.');
+                throw new Error('Server trả về HTML thay vì JSON. Có thể cần đăng nhập lại.');
             }
             return response.json();
         })
@@ -408,23 +408,23 @@
                     window.location.href = data.checkoutUrl;
                 } else {
                     // Show checkout URL for manual redirect
-                    btnText.textContent = 'Dang chuyen huong...';
+                    btnText.textContent = 'Đang chuyển hướng...';
                     setTimeout(function() {
                         window.location.href = data.checkoutUrl;
                     }, 500);
                 }
             } else {
                 btn.disabled = false;
-                if (btnText) btnText.textContent = 'Thanh toan bang QR SePay';
+                if (btnText) btnText.textContent = 'Thanh toán bằng QR SePay';
                 if (spinner) spinner.style.display = 'none';
-                alert('Loi khoi tao thanh toan: ' + (data.message || 'Khong ro nguyen nhan'));
+                alert('Lỗi khởi tạo thanh toán: ' + (data.message || 'Không rõ nguyên nhân'));
             }
         })
         .catch(function(err) {
             btn.disabled = false;
-            if (btnText) btnText.textContent = 'Thanh toan bang QR SePay';
+            if (btnText) btnText.textContent = 'Thanh toán bằng QR SePay';
             if (spinner) spinner.style.display = 'none';
-            alert('Loi ket noi: ' + err.message);
+            alert('Lỗi kết nối: ' + err.message);
         });
     }
 

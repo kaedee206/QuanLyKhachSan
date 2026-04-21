@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using QuanLyKhachSan.BackgroundServices;
 using QuanLyKhachSan.Data;
@@ -10,6 +11,13 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseUrls("http://+:5000");
+
+// Persist Data Protection keys để antiforgery/auth cookies không bị mất khi container restart
+var keysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+    .SetApplicationName("SunHotel")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -33,8 +41,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(2);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -46,9 +54,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(24);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.Name = "SunHotel.Auth";
-        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.Events.OnRedirectToLogin = context =>
         {
             if (context.Request.Headers["Accept"].ToString().Contains("application/json"))
@@ -102,10 +110,8 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 app.UseSession();
 app.UseStaticFiles();
 app.UseRouting();
@@ -128,6 +134,29 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = services.GetRequiredService<SunHotelDbContext>();
+
+        // Retry cho đến khi DB sẵn sàng (SQL Server khởi động chậm hơn app)
+        var maxRetries = 20;
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                await db.Database.CanConnectAsync();
+                Log.Information("Database connection established on attempt {Attempt}", attempt);
+                break;
+            }
+            catch (Exception ex)
+            {
+                if (attempt == maxRetries)
+                {
+                    Log.Fatal(ex, "Cannot connect to database after {MaxRetries} attempts. Exiting.", maxRetries);
+                    return;
+                }
+                Log.Warning("Database not ready (attempt {Attempt}/{MaxRetries}), retrying in 3s...", attempt, maxRetries);
+                await Task.Delay(3000);
+            }
+        }
+
         try
         {
             await db.Database.ExecuteSqlRawAsync(@"
@@ -193,9 +222,9 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("\n" + new string('=', 70));
             Console.WriteLine("FATAL ERROR: " + ex.Message);
             Console.WriteLine(new string('=', 70));
-            Console.WriteLine("\nCACH SUA:");
-            Console.WriteLine("  1. Xoa toan bo bang 'User' trong database");
-            Console.WriteLine("  2. Restart app - SeedData se tao lai tai khoan");
+            Console.WriteLine("\nCÁCH SỬA:");
+            Console.WriteLine("  1. Xóa toàn bộ bảng 'User' trong database");
+            Console.WriteLine("  2. Restart app - SeedData sẽ tạo lại tài khoản");
             Console.WriteLine(new string('=', 70) + "\n");
             return;
         }
@@ -236,16 +265,13 @@ using (var scope = app.Services.CreateScope())
         {
             Log.Warning(ex, "RoomType image update failed");
         }
-
-        await SeedData.InitializeAsync(services);
-        Log.Information("SeedData initialized successfully");
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "SeedData initialization failed");
+        Log.Error(ex, "Startup initialization failed");
     }
 }
 
-Log.Information("SunHotel MVC khoi dong tren moi truong: {Environment}", app.Environment.EnvironmentName);
+Log.Information("SunHotel MVC khởi động trên môi trường: {Environment}", app.Environment.EnvironmentName);
 
 app.Run();
