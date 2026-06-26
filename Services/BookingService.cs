@@ -91,8 +91,8 @@ namespace QuanLyKhachSan.Services
         {
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
             if (booking == null) throw new InvalidOperationException("Không tìm thấy booking");
-            if (booking.Status != BookingStatus.Pending)
-                throw new InvalidOperationException($"Không thể xác nhận booking với trạng thái: {booking.Status}");
+            if (booking.Status != BookingStatus.Pending && booking.Status != BookingStatus.Confirmed)
+                throw new InvalidOperationException($"Không thể xếp phòng cho booking với trạng thái: {booking.Status}");
 
             var room = await _db.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == roomId);
             if (room == null) throw new InvalidOperationException("Phòng không tồn tại");
@@ -111,6 +111,10 @@ namespace QuanLyKhachSan.Services
             if (hasConflict)
                 throw new InvalidOperationException("Phòng đã có booking khác trong khoảng thời gian này");
 
+            var oldStatus = booking.Status;
+            var oldRoomId = booking.RoomId;
+
+            // Nếu đang đổi phòng (re-assign), không cần thay đổi RoomStatus vì phòng vẫn Available cho đến check-in
             booking.RoomId = roomId;
             booking.Status = BookingStatus.Confirmed;
 
@@ -120,7 +124,7 @@ namespace QuanLyKhachSan.Services
                 Action = "CONFIRM_BOOKING",
                 EntityType = "booking",
                 EntityId = booking.Id,
-                OldValue = JsonConvert.SerializeObject(new { status = "Pending", room_id = (int?)null }),
+                OldValue = JsonConvert.SerializeObject(new { status = oldStatus.ToString(), room_id = oldRoomId }),
                 NewValue = JsonConvert.SerializeObject(new { status = "Confirmed", room_id = roomId })
             });
 

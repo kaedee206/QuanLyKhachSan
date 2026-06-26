@@ -22,18 +22,20 @@ namespace QuanLyKhachSan.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ── RoomType ──────────────────────────────────────────────
+            // Loai phòng
             modelBuilder.Entity<RoomType>(entity =>
             {
                 entity.HasIndex(e => e.Name);
             });
 
-            // ── Room ─────────────────────────────────────────────────
+            // Phòng
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasIndex(e => e.RoomNumber).IsUnique();
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.RoomTypeId);
+
+                entity.Property(e => e.Status).HasConversion<int>();
 
                 entity.HasOne(e => e.RoomType)
                       .WithMany(rt => rt.Rooms)
@@ -41,17 +43,17 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ── User ─────────────────────────────────────────────────
+            // Người dùng
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
 
-                // SQL Server: enum maps to int by default, explicit for clarity
+                // Vai trò / Phân quyền người dùng
                 entity.Property(e => e.Role).HasConversion<int>();
             });
 
-            // ── Booking ───────────────────────────────────────────────
+            // Đặt phòng
             modelBuilder.Entity<Booking>(entity =>
             {
                 entity.HasIndex(e => e.BookingCode).IsUnique();
@@ -72,7 +74,7 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ── Service ───────────────────────────────────────────────
+            // Dịch vụ
             modelBuilder.Entity<Service>(entity =>
             {
                 entity.Property(e => e.ServiceType).HasConversion<int>();
@@ -83,7 +85,7 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ── Invoice ───────────────────────────────────────────────
+            // Hóa đơn
             modelBuilder.Entity<Invoice>(entity =>
             {
                 entity.HasIndex(e => e.BookingId).IsUnique();
@@ -104,7 +106,7 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ── Ticket ────────────────────────────────────────────────
+            // Ticket xử lý các yêu cầu / sự cố
             modelBuilder.Entity<Ticket>(entity =>
             {
                 entity.HasIndex(e => e.TicketNumber).IsUnique();
@@ -132,7 +134,7 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ── AuditLog ──────────────────────────────────────────────
+            // Log
             modelBuilder.Entity<AuditLog>(entity =>
             {
                 entity.HasIndex(e => new { e.EntityType, e.EntityId });
@@ -144,7 +146,7 @@ namespace QuanLyKhachSan.Data
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ── EmailQueue ────────────────────────────────────────────
+            // đợi gửi email
             modelBuilder.Entity<EmailQueue>(entity =>
             {
                 entity.HasIndex(e => e.Status);

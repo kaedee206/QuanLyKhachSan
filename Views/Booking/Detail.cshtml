@@ -16,8 +16,8 @@
     };
     var statusText = b.Status switch
     {
-        BookingStatus.Pending => "Chờ xác nhận",
-        BookingStatus.Confirmed => "Đã xác nhận",
+        BookingStatus.Pending => "Chờ thanh toán",
+        BookingStatus.Confirmed => "Chờ nhận phòng",
         BookingStatus.CheckedIn => "Đã nhận phòng",
         BookingStatus.CheckedOut => "Đã trả phòng",
         BookingStatus.Cancelled => "Đã hủy",
@@ -76,7 +76,7 @@
                         </div>
                         <div class="mb-3">
                             <span class="text-muted">Phòng:</span>
-                            <div>@(b.Room?.RoomNumber ?? "<em>Chưa xếp phòng</em>")</div>
+                            <div>@if (b.Room != null) { @b.Room.RoomNumber } else { <em>Chưa xếp phòng</em> }</div>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted">Nhận phòng:</span>
@@ -114,13 +114,15 @@
             </div>
         </div>
 
-        <!-- ═══ ROOM ASSIGNMENT (Pending only) ═══ -->
-        @if (b.Status == BookingStatus.Pending && Model.AvailableRooms.Any())
+        <!-- ═══ ROOM ASSIGNMENT (Pending or Confirmed) ═══ -->
+        @if ((b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed) && Model.AvailableRooms.Any())
         {
             <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border-left: 4px solid #D4AF37 !important;">
                 <div class="card-body px-4">
                     <h6 class="mb-3" style="color: #1A3C5E; font-weight: 700;">
-                        <i class="bi bi-door-open me-2" style="color: #D4AF37;"></i>Xếp phòng & Xác nhận
+                        <i class="bi bi-door-open me-2" style="color: #D4AF37;"></i>Xếp phòng
+                        @if (b.Status == BookingStatus.Pending) { <span class="text-muted fw-normal" style="font-size:0.8rem;">— sẽ chuyển sang Chờ nhận phòng</span> }
+                        else { <span class="text-muted fw-normal" style="font-size:0.8rem;">— đổi phòng</span> }
                     </h6>
                     <form asp-action="Confirm" asp-route-code="@b.BookingCode" method="post">
                         @Html.AntiForgeryToken()
@@ -131,13 +133,13 @@
                                     <option value="">-- Chọn phòng --</option>
                                     @foreach (var room in Model.AvailableRooms)
                                     {
-                                        <option value="@room.Id">@room.RoomNumber — @room.RoomType?.Name (@room.RoomType?.BasePrice.ToString("N0") VNĐ/đêm)</option>
+                                        <option value="@room.Id" selected="@(b.RoomId == room.Id)">@room.RoomNumber — @room.RoomType?.Name (@room.RoomType?.BasePrice.ToString("N0") VNĐ/đêm)</option>
                                     }
                                 </select>
                             </div>
                             <div class="col-md-4">
                                 <button type="submit" class="btn btn-sm w-100" style="background: #2E8B8B; color: white; border-radius: 8px;">
-                                    <i class="bi bi-check-lg"></i> Xác nhận booking
+                                    <i class="bi bi-check-lg"></i> Xác nhận
                                 </button>
                             </div>
                         </div>

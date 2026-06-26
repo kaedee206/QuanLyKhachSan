@@ -147,8 +147,8 @@
                         };
                         var statusText = b.Status switch
                         {
-                            BookingStatus.Pending => "Chờ xác nhận",
-                            BookingStatus.Confirmed => "Đã xác nhận",
+                            BookingStatus.Pending => "Chờ thanh toán",
+                            BookingStatus.Confirmed => "Chờ nhận phòng",
                             BookingStatus.CheckedIn => "Đã nhận phòng",
                             BookingStatus.CheckedOut => "Đã trả phòng",
                             BookingStatus.Cancelled => "Đã hủy",

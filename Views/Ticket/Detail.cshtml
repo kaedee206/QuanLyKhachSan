@@ -89,7 +89,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <span class="text-muted">Người xử lý:</span>
-                            <div>@(Model.Assignee?.FullName ?? "<em>Chưa phân công</em>")</div>
+                            <div>@if (Model.Assignee != null) { @Model.Assignee.FullName } else { <em>Chưa phân công</em> }</div>
                         </div>
                         @if (Model.ResolvedAt.HasValue)
                         {

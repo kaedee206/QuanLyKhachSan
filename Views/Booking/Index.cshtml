@@ -27,8 +27,8 @@
                 <label class="form-label" style="font-size: 0.78rem; color: #6c757d;">Trạng thái</label>
                 <select name="Status" class="form-select form-select-sm" style="border-radius: 8px;">
                     <option value="">Tất cả</option>
-                    <option value="@BookingStatus.Pending" selected="@(filter.Status == BookingStatus.Pending)">Chờ xác nhận</option>
-                    <option value="@BookingStatus.Confirmed" selected="@(filter.Status == BookingStatus.Confirmed)">Đã xác nhận</option>
+                    <option value="@BookingStatus.Pending" selected="@(filter.Status == BookingStatus.Pending)">Chờ thanh toán</option>
+                    <option value="@BookingStatus.Confirmed" selected="@(filter.Status == BookingStatus.Confirmed)">Chờ nhận phòng</option>
                     <option value="@BookingStatus.CheckedIn" selected="@(filter.Status == BookingStatus.CheckedIn)">Đã nhận phòng</option>
                     <option value="@BookingStatus.CheckedOut" selected="@(filter.Status == BookingStatus.CheckedOut)">Đã trả phòng</option>
                     <option value="@BookingStatus.Cancelled" selected="@(filter.Status == BookingStatus.Cancelled)">Đã hủy</option>
@@ -86,8 +86,8 @@
                         };
                         var statusText = b.Status switch
                         {
-                            BookingStatus.Pending => "Chờ xác nhận",
-                            BookingStatus.Confirmed => "Đã xác nhận",
+                            BookingStatus.Pending => "Chờ thanh toán",
+                            BookingStatus.Confirmed => "Chờ nhận phòng",
                             BookingStatus.CheckedIn => "Đã nhận phòng",
                             BookingStatus.CheckedOut => "Đã trả phòng",
                             BookingStatus.Cancelled => "Đã hủy",
