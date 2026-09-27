@@ -79,6 +79,18 @@
                 </div>
 
                 <!-- ═══ CHARGES BREAKDOWN ═══ -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0" style="color: #1A3C5E; font-size: 1rem; font-weight: 700;">
+                        <i class="bi bi-receipt-cutoff me-2" style="color: #D4AF37;"></i>Chi tiết tiền phòng & dịch vụ
+                    </h5>
+                    @if (Model.PaymentStatus != PaymentStatus.Paid && b?.Status != BookingStatus.Cancelled)
+                    {
+                        <button type="button" class="btn btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddAttachedService"
+                                style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; border-radius: 8px; font-weight: 700;">
+                            <i class="bi bi-plus-circle-fill me-1"></i> + Dịch vụ đi kèm
+                        </button>
+                    }
+                </div>
                 <table class="table mb-0" style="font-size: 0.88rem;">
                     <thead>
                         <tr style="background: #f8f6f0;">
@@ -262,15 +274,108 @@
     </div>
 </div>
 
+<!-- ═══ MODAL THÊM DỊCH VỤ ĐI KÈM TỰ ĐỘNG GÁN VÀO HÓA ĐƠN NÀY ═══ -->
+<div class="modal fade" id="modalAddAttachedService" tabindex="-1" aria-labelledby="modalAddAttachedServiceLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0" style="background: #f8f6f0; border-radius: 16px 16px 0 0; padding: 1.25rem 1.5rem;">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalAddAttachedServiceLabel" style="color: #1A3C5E;">
+                        <i class="bi bi-concierge-bell me-2" style="color: #D4AF37;"></i>Thêm Dịch Vụ Đi Kèm
+                    </h5>
+                    <div class="text-muted" style="font-size: 0.8rem;">
+                        Tự động gán cho Hóa đơn <strong>#@Model.InvoiceNumber</strong> &bull; Mã booking: <strong>@b?.BookingCode</strong>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Service" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="BookingCode" value="@b?.BookingCode" />
+                <input type="hidden" name="ReturnInvoiceNumber" value="@Model.InvoiceNumber" />
+
+                <div class="modal-body p-4">
+                    <label class="form-label text-muted mb-2" style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Chọn nhanh dịch vụ / món</label>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Phở Bò Tái Lăn Hà Nội" data-type="@((int)ServiceType.Food)" data-price="85000" style="font-size: 0.78rem; border-radius: 6px;">🍲 Phở Bò (85k)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Bò Bít Tết Thăn Ngoại Úc 4 Sao" data-type="@((int)ServiceType.Food)" data-price="350000" style="font-size: 0.78rem; border-radius: 6px;">🥩 Steak Úc (350k)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Cà Phê Phin Sữa Đá Cầu Đất" data-type="@((int)ServiceType.Beverage)" data-price="45000" style="font-size: 0.78rem; border-radius: 6px;">☕ Cà phê (45k)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Bia Craft Sun Hotel Special" data-type="@((int)ServiceType.Beverage)" data-price="65000" style="font-size: 0.78rem; border-radius: 6px;">🍺 Bia Craft (65k)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Giặt ủi nhanh tiêu chuẩn" data-type="@((int)ServiceType.Laundry)" data-price="50000" style="font-size: 0.78rem; border-radius: 6px;">👔 Giặt ủi (50k)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 btn-service-preset" 
+                                data-name="Nước khoáng minibar (2 chai)" data-type="@((int)ServiceType.Minibar)" data-price="30000" style="font-size: 0.78rem; border-radius: 6px;">💧 Minibar (30k)</button>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="form-label" style="font-size: 0.82rem; font-weight: 600;">Tên dịch vụ / Món</label>
+                            <input type="text" name="ServiceName" id="attachedServiceName" required class="form-control" style="border-radius: 8px;" placeholder="VD: Bò Bít Tết, Cà phê..." />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label" style="font-size: 0.82rem; font-weight: 600;">Loại dịch vụ</label>
+                            <select name="ServiceType" id="attachedServiceType" class="form-select" style="border-radius: 8px;">
+                                <option value="@ServiceType.Food">Món ăn (Food)</option>
+                                <option value="@ServiceType.Beverage">Đồ uống / Bar (Beverage)</option>
+                                <option value="@ServiceType.Dining">Dining tại phòng</option>
+                                <option value="@ServiceType.Laundry">Giặt ủi</option>
+                                <option value="@ServiceType.Minibar">Minibar</option>
+                                <option value="@ServiceType.Breakfast">Ăn sáng buffet</option>
+                                <option value="@ServiceType.Transport">Vận chuyển</option>
+                                <option value="@ServiceType.Extra">Phụ thu khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 0.82rem; font-weight: 600;">Số lượng</label>
+                            <input type="number" name="Quantity" id="attachedQuantity" value="1" min="1" max="100" class="form-control" style="border-radius: 8px;" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" style="font-size: 0.82rem; font-weight: 600;">Đơn giá (VNĐ)</label>
+                            <input type="number" name="UnitPrice" id="attachedUnitPrice" required min="0" step="1000" class="form-control" style="border-radius: 8px;" placeholder="VD: 50000" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" style="font-size: 0.82rem; font-weight: 600;">Ghi chú thêm</label>
+                            <input type="text" name="Notes" class="form-control" style="border-radius: 8px;" placeholder="VD: Mang lên phòng ngay, ít đường..." />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #1A3C5E, #2A5A8C); color: white; border-radius: 8px; font-weight: 600; padding: 8px 22px;">
+                        <i class="bi bi-check-lg me-1"></i> Gán vào hóa đơn này
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        // Đổ dữ liệu vào modal khi được trigger
         var confirmModal = document.getElementById('confirmPaymentModal');
-        confirmModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            document.getElementById('modalInvoiceNumber').textContent = button.getAttribute('data-invoice-number');
-            document.getElementById('modalPaymentMethod').textContent = button.getAttribute('data-payment-method');
-            document.getElementById('modalTotalAmount').textContent = button.getAttribute('data-total-amount') + ' VNĐ';
+        if (confirmModal) {
+            confirmModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                document.getElementById('modalInvoiceNumber').textContent = button.getAttribute('data-invoice-number');
+                document.getElementById('modalPaymentMethod').textContent = button.getAttribute('data-payment-method');
+                document.getElementById('modalTotalAmount').textContent = button.getAttribute('data-total-amount') + ' VNĐ';
+            });
+        }
+
+        document.querySelectorAll('.btn-service-preset').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var nameInput = document.getElementById('attachedServiceName');
+                var typeInput = document.getElementById('attachedServiceType');
+                var priceInput = document.getElementById('attachedUnitPrice');
+                if (nameInput) nameInput.value = this.dataset.name;
+                if (typeInput) typeInput.value = this.dataset.type;
+                if (priceInput) priceInput.value = this.dataset.price;
+            });
         });
     </script>
 }

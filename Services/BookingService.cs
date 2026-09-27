@@ -20,7 +20,10 @@ namespace QuanLyKhachSan.Services
 
         public async Task<Booking> CreateBooking(CreateBookingViewModel model, int? userId = null)
         {
-            var roomType = await _db.RoomTypes.FindAsync(model.RoomTypeId);
+            if (!model.RoomTypeId.HasValue)
+                throw new InvalidOperationException("Chưa chọn loại phòng");
+
+            var roomType = await _db.RoomTypes.FindAsync(model.RoomTypeId.Value);
             if (roomType == null)
                 throw new InvalidOperationException("Loại phòng không tồn tại");
 
@@ -38,7 +41,7 @@ namespace QuanLyKhachSan.Services
             var booking = new Booking
             {
                 BookingCode = bookingCode,
-                RoomTypeId = model.RoomTypeId,
+                RoomTypeId = model.RoomTypeId.Value,
                 GuestName = model.GuestName,
                 Phone = model.Phone,
                 Email = model.Email,

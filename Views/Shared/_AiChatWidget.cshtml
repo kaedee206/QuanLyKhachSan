@@ -1,0 +1,61 @@
+@{
+    var userRole = "guest";
+    if (User?.Identity?.IsAuthenticated == true)
+    {
+        if (User.IsInRole("Admin")) userRole = "admin";
+        else if (User.IsInRole("Manager")) userRole = "manager";
+        else if (User.IsInRole("Receptionist")) userRole = "receptionist";
+        else if (User.IsInRole("Housekeeping")) userRole = "housekeeping";
+        else if (User.IsInRole("Maintenance")) userRole = "maintenance";
+        else
+        {
+            var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value 
+                         ?? User.FindFirst("role")?.Value;
+            userRole = roleClaim?.ToLowerInvariant() ?? "customer";
+        }
+    }
+}
+
+<!-- AI Chat Widget Styles -->
+<link rel="stylesheet" href="~/css/ai-chat-widget.css" asp-append-version="true" />
+
+<!-- AI Chat Widget FAB -->
+<div id="ai-chat-fab" title="Trò chuyện với AI">
+    <i class="bi bi-chat-dots-fill"></i>
+    <div id="ai-chat-badge">0</div>
+</div>
+
+<!-- AI Chat Window -->
+<div id="ai-chat-window" class="ai-chat-closed">
+    <div class="ai-chat-header">
+        <div class="ai-chat-title">
+            <i class="bi bi-robot"></i> @(userRole == "admin" || userRole == "manager" ? "Trợ lý Điều hành Sun Hotel" : "Trợ lý Khách sạn Sun Hotel")
+        </div>
+        <div class="ai-chat-header-actions">
+            <button id="ai-chat-new-conv" title="Cuộc trò chuyện mới"><i class="bi bi-arrow-clockwise"></i></button>
+            <button id="ai-chat-minimize" title="Thu nhỏ"><i class="bi bi-dash-lg"></i></button>
+            <button id="ai-chat-close" title="Đóng"><i class="bi bi-x-lg"></i></button>
+        </div>
+    </div>
+    
+    <div id="ai-chat-messages" class="ai-chat-messages">
+        <!-- Messages will be injected here via JS -->
+    </div>
+    
+    <div class="ai-chat-input-area">
+        <div class="ai-chat-input-wrapper">
+            <input type="text" id="ai-chat-input" placeholder="@(userRole == "admin" || userRole == "manager" ? "Hỏi về doanh thu, công suất phòng, báo cáo..." : "Hỏi về phòng trống, đặt phòng, dịch vụ...")" autocomplete="off">
+        </div>
+        <button id="ai-chat-send" title="Gửi">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Pass backend variables to JS -->
+<script>
+    window.aiChatUserRole = '@userRole';
+</script>
+
+<!-- AI Chat Widget Script -->
+<script src="~/js/ai-chat-widget.js" asp-append-version="true"></script>

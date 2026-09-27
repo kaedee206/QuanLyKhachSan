@@ -88,6 +88,16 @@ namespace QuanLyKhachSan.Services
             await _db.SaveChangesAsync();
             _logger.LogInformation("Payment confirmed: {InvoiceNumber}, Method: {Method}, Amount: {Amount}",
                 invoiceNumber, method, invoice.TotalAmount);
+
+            try
+            {
+                await _emailService.SendPaymentConfirmationEmail(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận thanh toán cho {InvoiceNumber}", invoice.InvoiceNumber);
+            }
+
             return invoice;
         }
 
@@ -173,6 +183,16 @@ namespace QuanLyKhachSan.Services
             });
 
             await _db.SaveChangesAsync();
+
+            try
+            {
+                await _emailService.SendPaymentConfirmationEmail(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận thanh toán VietQR cho {InvoiceNumber}", invoice.InvoiceNumber);
+            }
+
             return invoice;
         }
 
@@ -212,6 +232,16 @@ namespace QuanLyKhachSan.Services
             });
 
             await _db.SaveChangesAsync();
+
+            try
+            {
+                await _emailService.SendPaymentConfirmationEmail(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận thanh toán MoMo cho {InvoiceNumber}", invoice.InvoiceNumber);
+            }
+
             return invoice;
         }
     }

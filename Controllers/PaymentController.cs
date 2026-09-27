@@ -67,9 +67,9 @@ namespace QuanLyKhachSan.Controllers
 
             if (invoice == null)
             {
-                var userId = User.Identity?.IsAuthenticated == true
-                    ? int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)
-                    : 1;
+                int? userId = (User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedId))
+                    ? parsedId
+                    : null;
 
                 var servicesTotal = await _db.Services
                     .Where(s => s.BookingId == booking.Id)
@@ -130,9 +130,9 @@ namespace QuanLyKhachSan.Controllers
 
             if (invoice == null)
             {
-                var userId = User.Identity?.IsAuthenticated == true
-                    ? int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)
-                    : 1;
+                int? userId = (User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedId))
+                    ? parsedId
+                    : null;
 
                 var servicesTotal = await _db.Services
                     .Where(s => s.BookingId == booking.Id)

@@ -23,21 +23,35 @@
             <div class="card-body p-4">
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnInvoiceNumber" />
+
+                    @if (!string.IsNullOrEmpty(Model.ReturnInvoiceNumber))
+                    {
+                        <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2" style="border-radius: 8px; font-size: 0.85rem;">
+                            <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                            <div>
+                                Dịch vụ này sẽ được <strong>tự động liên kết</strong> vào hóa đơn <strong>#@Model.ReturnInvoiceNumber</strong> (Mã đặt phòng: <strong>@Model.BookingCode</strong>).
+                            </div>
+                        </div>
+                    }
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label asp-for="BookingCode" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
-                            <input asp-for="BookingCode" class="form-control" style="border-radius: 8px;" placeholder="VD: BK001" />
+                            <input asp-for="BookingCode" class="form-control" style="border-radius: 8px;" placeholder="VD: BK001" readonly="@(!string.IsNullOrEmpty(Model.BookingCode))" />
                             <span asp-validation-for="BookingCode" class="text-danger" style="font-size: 0.78rem;"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ServiceType" class="form-label" style="font-size: 0.85rem; font-weight: 600;"></label>
                             <select asp-for="ServiceType" class="form-select" style="border-radius: 8px;">
+                                <option value="@ServiceType.Food">Ẩm thực / Món ăn (Food)</option>
+                                <option value="@ServiceType.Beverage">Đồ uống / Quầy bar (Beverage)</option>
+                                <option value="@ServiceType.Dining">Bữa ăn tại phòng (Dining)</option>
                                 <option value="@ServiceType.Laundry">Giặt ủi</option>
                                 <option value="@ServiceType.Minibar">Minibar</option>
-                                <option value="@ServiceType.Breakfast">Ăn sáng</option>
-                                <option value="@ServiceType.Transport">Vận chuyển</option>
-                                <option value="@ServiceType.Extra">Phụ thu</option>
+                                <option value="@ServiceType.Breakfast">Ăn sáng buffet</option>
+                                <option value="@ServiceType.Transport">Vận chuyển / Xe đưa đón</option>
+                                <option value="@ServiceType.Extra">Phụ thu / Dịch vụ khác</option>
                             </select>
                             <span asp-validation-for="ServiceType" class="text-danger" style="font-size: 0.78rem;"></span>
                         </div>

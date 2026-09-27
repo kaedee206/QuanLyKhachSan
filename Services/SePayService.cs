@@ -396,8 +396,9 @@ namespace QuanLyKhachSan.Services
             if (paidAmount < invoice.TotalAmount)
             {
                 _logger.LogWarning(
-                    "SePay IPN: số tiền thấp hơn dự kiến. Expected={Expected}, Received={Received} — vẫn xác nhận",
+                    "SePay IPN: số tiền thanh toán không đủ. Expected={Expected}, Received={Received} — từ chối xác nhận",
                     invoice.TotalAmount, paidAmount);
+                return false;
             }
 
             var transactionId = payload.Transaction?.TransactionId ?? "";

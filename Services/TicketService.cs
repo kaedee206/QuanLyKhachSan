@@ -21,7 +21,9 @@ namespace QuanLyKhachSan.Services
         public async Task<Ticket> CreateTicket(CreateTicketViewModel model, int userId)
         {
             var today = DateTime.UtcNow.ToString("yyyyMMdd");
-            var count = await _db.Tickets.CountAsync(t => t.CreatedAt.Date == DateTime.UtcNow.Date) + 1;
+            var todayUtc = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+            var tomorrowUtc = todayUtc.AddDays(1);
+            var count = await _db.Tickets.CountAsync(t => t.CreatedAt >= todayUtc && t.CreatedAt < tomorrowUtc) + 1;
             var ticketNumber = $"TK-{today}-{count:D3}";
 
             var ticket = new Ticket

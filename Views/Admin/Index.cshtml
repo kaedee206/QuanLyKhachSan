@@ -1,180 +1,543 @@
 @model DashboardViewModel
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Bảng Điều Hành Khách Sạn";
+    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Staff";
+    var userFullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Nhân viên";
+
+    var roleTitle = userRole switch
+    {
+        "Admin" => "Quản trị viên tối cao",
+        "Manager" => "Quản lý khách sạn",
+        "Receptionist" => "Lễ tân ca trực",
+        "Housekeeping" => "Nhân viên buồng phòng",
+        "Maintenance" => "Kỹ thuật & Bảo trì",
+        "Kitchen" => "Nhân viên bếp núc",
+        "Bar" => "Nhân viên quầy bar",
+        "Inventory" => "Quản lý kho & vật tư",
+        _ => userRole
+    };
+
+    var roleBadgeClass = userRole switch
+    {
+        "Admin" => "badge-admin",
+        "Manager" => "badge-manager",
+        "Receptionist" => "badge-reception",
+        "Housekeeping" => "badge-hk",
+        "Maintenance" => "badge-tech",
+        "Kitchen" => "badge-kitchen",
+        "Bar" => "badge-bar",
+        "Inventory" => "badge-inventory",
+        _ => "badge-secondary"
+    };
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Dashboard</h4>
-        <small class="text-muted">Tổng quan hệ thống - @DateTime.Now.ToString("dd/MM/yyyy")</small>
+<style>
+    .ops-header-card {
+        background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 60%, #163352 100%);
+        border-radius: 16px;
+        padding: 1.75rem 2rem;
+        color: #FFFFFF;
+        box-shadow: 0 10px 25px -5px rgba(15, 37, 64, 0.25);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .ops-header-card::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0) 70%);
+        pointer-events: none;
+    }
+
+    .clock-display {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #F8FAFC;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .date-display {
+        font-size: 0.92rem;
+        color: #D4AF37;
+        font-weight: 600;
+        margin-top: 0.35rem;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-admin { background: rgba(168, 85, 247, 0.25); color: #E9D5FF; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-manager { background: rgba(245, 158, 11, 0.25); color: #FDE68A; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-reception { background: rgba(14, 165, 233, 0.25); color: #BAE6FD; border: 1px solid rgba(14, 165, 233, 0.4); }
+    .badge-hk { background: rgba(16, 185, 129, 0.25); color: #A7F3D0; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-tech { background: rgba(249, 115, 22, 0.25); color: #FED7AA; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .badge-kitchen { background: rgba(239, 68, 68, 0.25); color: #FECACA; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-bar { background: rgba(236, 72, 153, 0.25); color: #FBCFE8; border: 1px solid rgba(236, 72, 153, 0.4); }
+    .badge-inventory { background: rgba(99, 102, 241, 0.25); color: #C7D2FE; border: 1px solid rgba(99, 102, 241, 0.4); }
+
+    .ops-section-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .ops-section-header {
+        padding: 1.1rem 1.5rem;
+        background: #FFFFFF;
+        border-bottom: 1px solid #EEF2F6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .ops-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0F2540;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ops-count-pill {
+        font-size: 0.78rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .ops-table {
+        margin: 0;
+        font-size: 0.88rem;
+    }
+
+    .ops-table th {
+        background: #F8FAFC;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-top: none;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .ops-table td {
+        padding: 0.9rem 1.25rem;
+        vertical-align: middle;
+        border-color: #F1F5F9;
+    }
+
+    .live-pulse {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #10B981;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 1.8s infinite;
+    }
+
+    @@keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+</style>
+
+<!-- ═══ 1. BANNER TRỰC BAN: NGÀY GIỜ, TÊN, VAI TRÒ ═══ -->
+<div class="ops-header-card">
+    <div class="row align-items-center">
+        <!-- User Info & Role -->
+        <div class="col-lg-6 mb-3 mb-lg-0">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width: 58px; height: 58px; border-radius: 14px; background: linear-gradient(135deg, #D4AF37, #F5D77F); color: #0F2540; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);">
+                    @userFullName.Substring(0, 1).ToUpper()
+                </div>
+                <div>
+                    <div style="font-size: 0.82rem; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                        Ca trực vận hành
+                    </div>
+                    <h3 class="mb-1" style="font-weight: 700; color: #FFFFFF; font-size: 1.45rem;">
+                        @userFullName
+                    </h3>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span class="badge @roleBadgeClass px-3 py-1" style="font-size: 0.8rem; border-radius: 8px; font-weight: 600;">
+                            <i class="bi bi-person-badge me-1"></i> @roleTitle
+                        </span>
+                        <span class="text-white-50" style="font-size: 0.78rem;">
+                            &bull; Hệ thống Sun Hotel PMS
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Clock & Datetime -->
+        <div class="col-lg-6 text-lg-end">
+            <div class="d-inline-flex flex-column align-items-lg-end p-3 rounded-3" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="live-pulse"></span>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #CBD5E1; font-weight: 600;">Thời gian thực tế</span>
+                </div>
+                <div class="clock-display" id="liveClockDisplay">--:--:--</div>
+                <div class="date-display" id="liveDateDisplay">Đang đồng bộ thời gian...</div>
+            </div>
+        </div>
     </div>
-    <a asp-controller="Booking" asp-action="AdminCreate" class="btn btn-sm" style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600;">
-        <i class="bi bi-plus-lg"></i> Đặt phòng mới
-    </a>
+
+    <!-- Quick Navigation to Statistics / PMS Matrix -->
+    <div class="mt-3 pt-3 d-flex flex-wrap gap-2 justify-content-between align-items-center" style="border-top: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="d-flex gap-2">
+            <a asp-controller="Booking" asp-action="AdminCreate" class="btn btn-sm btn-light fw-bold" style="border-radius: 8px; font-size: 0.82rem;">
+                <i class="bi bi-calendar-plus me-1 text-primary"></i> + Tạo Đặt Phòng
+            </a>
+            <a asp-controller="Booking" asp-action="CheckIn" class="btn btn-sm btn-outline-light" style="border-radius: 8px; font-size: 0.82rem;">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Tiếp Nhận Check-in
+            </a>
+            <a asp-controller="Booking" asp-action="CheckOut" class="btn btn-sm btn-outline-light" style="border-radius: 8px; font-size: 0.82rem;">
+                <i class="bi bi-box-arrow-right me-1"></i> Quầy Check-out
+            </a>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Report" asp-action="PmsOverview" class="btn btn-sm" style="background: rgba(212, 175, 55, 0.2); color: #F5D77F; border: 1px solid #D4AF37; border-radius: 8px; font-size: 0.82rem; font-weight: 600;">
+                <i class="bi bi-grid-3x3 me-1"></i> Xem Ma Trận Phòng & Thống Kê PMS &rarr;
+            </a>
+        </div>
+    </div>
 </div>
 
-<!-- ═══ STATS CARDS ═══ -->
-<div class="row g-3 mb-4">
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(212,175,55,0.15); display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-calendar-check" style="font-size: 1.4rem; color: #D4AF37;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size: 0.78rem;">Booking hôm nay</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #1A3C5E;">@Model.TodayNewBookings</div>
-                </div>
-            </div>
-        </div>
+<!-- ═══ 2. DANH SÁCH CHECK-IN HÔM NAY ═══ -->
+<div class="ops-section-card">
+    <div class="ops-section-header">
+        <h5 class="ops-section-title">
+            <i class="bi bi-box-arrow-in-right" style="color: #0E7490; font-size: 1.25rem;"></i>
+            Danh Sách Check-in Hôm Nay (Arrivals)
+            <span class="ops-count-pill bg-info text-white">@Model.TodayArrivals.Count</span>
+        </h5>
+        <a asp-controller="Booking" asp-action="CheckIn" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-size: 0.8rem;">
+            Xem tất cả phòng chờ check-in &rarr;
+        </a>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(26,60,94,0.12); display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-cash-stack" style="font-size: 1.4rem; color: #1A3C5E;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size: 0.78rem;">Doanh thu hôm nay</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #1A3C5E;">@Model.TodayRevenue.ToString("N0") VNĐ</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(46,139,139,0.15); display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-building" style="font-size: 1.4rem; color: #2E8B8B;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size: 0.78rem;">Tỷ lệ lấp đầy</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #2E8B8B;">@Model.OccupancyRate.ToString("N1")%</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-wrench" style="font-size: 1.4rem; color: #dc3545;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size: 0.78rem;">Ticket chờ xử lý</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;">@Model.PendingTickets</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ ROOM STATUS GRID ═══ -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-    <div class="card-header bg-white border-0 pt-3 pb-2 px-4" style="border-radius: 12px 12px 0 0;">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Sơ đồ phòng</h6>
-            <div class="d-flex gap-3" style="font-size: 0.75rem;">
-                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #28a745;"></span> Trống (@Model.RoomStats.Available)</span>
-                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #dc3545;"></span> Có khách (@Model.RoomStats.Occupied)</span>
-                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #ffc107;"></span> Đang dọn (@Model.RoomStats.Cleaning)</span>
-                <span><span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #6c757d;"></span> Bảo trì (@Model.RoomStats.Maintenance)</span>
-            </div>
-        </div>
-    </div>
-    <div class="card-body px-4">
-        <div class="d-flex flex-wrap gap-2">
-            @foreach (var room in Model.RoomGrid)
-            {
-                var bgColor = room.Status switch
+    <div class="table-responsive">
+        <table class="table table-hover ops-table">
+            <thead>
+                <tr>
+                    <th>Mã Đặt Phòng</th>
+                    <th>Khách Hàng</th>
+                    <th>Số Điện Thoại</th>
+                    <th>Phòng & Hạng Phòng</th>
+                    <th>Giờ Nhận</th>
+                    <th>Số Khách</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end pe-4">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.TodayArrivals.Any())
                 {
-                    RoomStatus.Available => "#28a745",
-                    RoomStatus.Occupied => "#dc3545",
-                    RoomStatus.Cleaning => "#ffc107",
-                    RoomStatus.Maintenance => "#6c757d",
-                    _ => "#adb5bd"
-                };
-                var textColor = room.Status == RoomStatus.Cleaning ? "#1A3C5E" : "white";
-                <a asp-controller="Room" asp-action="Index" class="text-decoration-none"
-                   style="width: 58px; height: 58px; border-radius: 8px; background: @bgColor; color: @textColor; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 600; transition: transform 0.15s;"
-                   title="@room.RoomNumber - @room.RoomTypeName@(room.GuestName != null ? " | " + room.GuestName : "")">
-                    <span style="font-size: 0.85rem;">@room.RoomNumber</span>
-                    @if (room.GuestName != null)
+                    @foreach (var b in Model.TodayArrivals)
                     {
-                        <span style="font-size: 0.6rem; opacity: 0.85;">@room.GuestName.Split(' ').Last()</span>
+                        <tr>
+                            <td class="fw-bold" style="color: #1A3C5E;">
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" class="text-decoration-none" style="color: #1A3C5E;">
+                                    @b.BookingCode
+                                </a>
+                            </td>
+                            <td class="fw-semibold">@b.GuestName</td>
+                            <td><span class="text-muted font-monospace">@b.Phone</span></td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    <i class="bi bi-door-open me-1 text-primary"></i>Phòng @(b.Room?.RoomNumber ?? "Chưa gán")
+                                </span>
+                                <small class="text-muted ms-1">(@(b.RoomType?.Name ?? "—"))</small>
+                            </td>
+                            <td>
+                                <i class="bi bi-clock me-1 text-muted"></i>
+                                @(b.ActualCheckIn?.ToString("HH:mm") ?? "14:00")
+                            </td>
+                            <td>@b.NumGuests khách</td>
+                            <td>
+                                @if (b.Status == BookingStatus.CheckedIn)
+                                {
+                                    <span class="badge bg-success">Đã Check-in</span>
+                                }
+                                else if (b.Status == BookingStatus.Confirmed)
+                                {
+                                    <span class="badge bg-primary">Chờ nhận phòng</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">@b.Status</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" class="btn btn-sm btn-outline-secondary py-1 px-2" style="border-radius: 6px; font-size: 0.78rem;">
+                                    <i class="bi bi-eye"></i> Chi tiết
+                                </a>
+                                @if (b.Status != BookingStatus.CheckedIn)
+                                {
+                                    <a asp-controller="Booking" asp-action="CheckIn" class="btn btn-sm py-1 px-2 ms-1" style="background: #0E7490; color: white; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">
+                                        <i class="bi bi-check-lg"></i> Check-in
+                                    </a>
+                                }
+                            </td>
+                        </tr>
                     }
-                </a>
-            }
-        </div>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-check2-circle fs-3 text-success d-block mb-1"></i>
+                            Không có khách chờ check-in trong ngày hôm nay
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- ═══ RECENT BOOKINGS ═══ -->
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-header bg-white border-0 pt-3 pb-2 px-4" style="border-radius: 12px 12px 0 0;">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0" style="color: #1A3C5E; font-weight: 700;">Booking gần đây</h6>
-            <a asp-controller="Booking" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="font-size: 0.78rem;">Xem tất cả</a>
+<!-- ═══ 3. DANH SÁCH CHECK-OUT HÔM NAY ═══ -->
+<div class="ops-section-card">
+    <div class="ops-section-header">
+        <h5 class="ops-section-title">
+            <i class="bi bi-box-arrow-right" style="color: #D97706; font-size: 1.25rem;"></i>
+            Danh Sách Check-out Hôm Nay (Departures)
+            <span class="ops-count-pill bg-warning text-dark">@Model.TodayDepartures.Count</span>
+        </h5>
+        <a asp-controller="Booking" asp-action="CheckOut" class="btn btn-sm btn-outline-warning text-dark" style="border-radius: 8px; font-size: 0.8rem;">
+            Quầy trả phòng check-out &rarr;
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover ops-table">
+            <thead>
+                <tr>
+                    <th>Mã Đặt Phòng</th>
+                    <th>Khách Hàng</th>
+                    <th>Phòng</th>
+                    <th>Hạn Trả Phòng</th>
+                    <th>Tổng Tiền</th>
+                    <th>Thanh Toán</th>
+                    <th class="text-end pe-4">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.TodayDepartures.Any())
+                {
+                    @foreach (var b in Model.TodayDepartures)
+                    {
+                        var isPaid = b.Invoice?.PaymentStatus == PaymentStatus.Paid;
+                        <tr>
+                            <td class="fw-bold" style="color: #1A3C5E;">
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" class="text-decoration-none" style="color: #1A3C5E;">
+                                    @b.BookingCode
+                                </a>
+                            </td>
+                            <td class="fw-semibold">@b.GuestName</td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    Phòng @(b.Room?.RoomNumber ?? "—")
+                                </span>
+                            </td>
+                            <td>
+                                <i class="bi bi-clock me-1 text-muted"></i>
+                                @b.CheckOutDate.ToString("dd/MM/yyyy") (12:00)
+                            </td>
+                            <td class="fw-bold" style="color: #D4AF37;">
+                                @((b.Invoice?.TotalAmount ?? b.TotalAmount).ToString("N0")) VNĐ
+                            </td>
+                            <td>
+                                @if (isPaid)
+                                {
+                                    <span class="badge bg-success">Đã thanh toán</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Chưa thanh toán</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" class="btn btn-sm btn-outline-secondary py-1 px-2" style="border-radius: 6px; font-size: 0.78rem;">
+                                    <i class="bi bi-eye"></i> Xem
+                                </a>
+                                <a asp-controller="Booking" asp-action="CheckOut" class="btn btn-sm py-1 px-2 ms-1" style="background: #1A3C5E; color: white; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">
+                                    <i class="bi bi-box-arrow-right"></i> Check-out
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-check2-circle fs-3 text-success d-block mb-1"></i>
+                            Không có khách cần trả phòng hôm nay
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══ 4. DANH SÁCH TICKET CỦA KHÁCH HÀNG ═══ -->
+<div class="ops-section-card">
+    <div class="ops-section-header">
+        <h5 class="ops-section-title">
+            <i class="bi bi-ticket-detailed" style="color: #7C3AED; font-size: 1.25rem;"></i>
+            Ticket Yêu Cầu Của Khách Hàng (Customer Tickets)
+            <span class="ops-count-pill bg-purple text-white" style="background: #7C3AED;">@Model.RecentTickets.Count</span>
+        </h5>
+        <div class="d-flex gap-2">
+            <a asp-controller="Ticket" asp-action="Create" class="btn btn-sm" style="background: #7C3AED; color: white; border-radius: 8px; font-size: 0.8rem;">
+                <i class="bi bi-plus-lg me-1"></i> + Tạo Ticket Mới
+            </a>
+            <a asp-controller="Ticket" asp-action="Index" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-size: 0.8rem;">
+                Xem toàn bộ &rarr;
+            </a>
         </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
-                <thead style="background: #f8f6f0;">
-                    <tr>
-                        <th class="border-0 px-4 py-2">Mã</th>
-                        <th class="border-0 py-2">Khách</th>
-                        <th class="border-0 py-2">Phòng</th>
-                        <th class="border-0 py-2">Nhận phòng</th>
-                        <th class="border-0 py-2">Trả phòng</th>
-                        <th class="border-0 py-2">Trạng thái</th>
-                        <th class="border-0 py-2">Tổng tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var b in Model.RecentBookings)
+    <div class="table-responsive">
+        <table class="table table-hover ops-table">
+            <thead>
+                <tr>
+                    <th>Mã Ticket</th>
+                    <th>Phòng</th>
+                    <th>Loại Yêu Cầu</th>
+                    <th>Nội Dung</th>
+                    <th>Mức Ưu Tiên</th>
+                    <th>Trạng Thái</th>
+                    <th>Người Xử Lý</th>
+                    <th class="text-end pe-4">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentTickets.Any())
+                {
+                    @foreach (var t in Model.RecentTickets)
                     {
-                        var badgeClass = b.Status switch
+                        var priorityBadge = t.Priority switch
                         {
-                            BookingStatus.Pending => "bg-warning text-dark",
-                            BookingStatus.Confirmed => "bg-info text-dark",
-                            BookingStatus.CheckedIn => "bg-success",
-                            BookingStatus.CheckedOut => "bg-secondary",
-                            BookingStatus.Cancelled => "bg-danger",
-                            BookingStatus.NoShow => "bg-dark",
+                            TicketPriority.Urgent => "bg-danger",
+                            TicketPriority.High => "bg-warning text-dark",
+                            TicketPriority.Medium => "bg-info text-dark",
                             _ => "bg-secondary"
                         };
-                        var statusText = b.Status switch
+
+                        var statusBadge = t.Status switch
                         {
-                            BookingStatus.Pending => "Chờ thanh toán",
-                            BookingStatus.Confirmed => "Chờ nhận phòng",
-                            BookingStatus.CheckedIn => "Đã nhận phòng",
-                            BookingStatus.CheckedOut => "Đã trả phòng",
-                            BookingStatus.Cancelled => "Đã hủy",
-                            BookingStatus.NoShow => "Không đến",
-                            _ => b.Status.ToString()
+                            TicketStatus.Open => "bg-danger",
+                            TicketStatus.InProgress => "bg-primary",
+                            TicketStatus.Resolved => "bg-success",
+                            _ => "bg-dark"
                         };
+
+                        var statusText = t.Status switch
+                        {
+                            TicketStatus.Open => "Chờ xử lý",
+                            TicketStatus.InProgress => "Đang xử lý",
+                            TicketStatus.Resolved => "Đã giải quyết",
+                            _ => "Đã đóng"
+                        };
+
+                        var typeText = t.Type switch
+                        {
+                            TicketType.Maintenance => "Kỹ thuật & Bảo trì",
+                            TicketType.Housekeeping => "Buồng phòng",
+                            TicketType.Kitchen => "Bếp núc / F&B",
+                            TicketType.Bar => "Quầy bar / Đồ uống",
+                            TicketType.Service => "Dịch vụ lễ tân",
+                            _ => "Khác"
+                        };
+
                         <tr>
-                            <td class="px-4">
-                                <a asp-controller="Booking" asp-action="Detail" asp-route-id="@b.Id" style="color: #1A3C5E; font-weight: 600;">@b.BookingCode</a>
+                            <td class="fw-bold font-monospace" style="color: #7C3AED;">
+                                <a asp-controller="Ticket" asp-action="Detail" asp-route-id="@t.Id" class="text-decoration-none" style="color: #7C3AED;">
+                                    @t.TicketNumber
+                                </a>
                             </td>
-                            <td>@b.GuestName</td>
-                            <td>@(b.Room?.RoomNumber ?? "Chưa xếp")</td>
-                            <td>@b.CheckInDate.ToString("dd/MM/yyyy")</td>
-                            <td>@b.CheckOutDate.ToString("dd/MM/yyyy")</td>
-                            <td><span class="badge @badgeClass" style="font-size: 0.72rem;">@statusText</span></td>
-                            <td style="font-weight: 600;">@b.TotalAmount.ToString("N0") VNĐ</td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    <i class="bi bi-door-closed me-1"></i>P.@(t.Room?.RoomNumber ?? "—")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark" style="font-size: 0.85rem;">@typeText</span>
+                            </td>
+                            <td style="max-width: 280px;" class="text-truncate" title="@t.Description">
+                                @t.Description
+                            </td>
+                            <td>
+                                <span class="badge @priorityBadge">@t.Priority</span>
+                            </td>
+                            <td>
+                                <span class="badge @statusBadge">@statusText</span>
+                            </td>
+                            <td>
+                                @(t.Assignee?.FullName ?? "Chưa phân công")
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-controller="Ticket" asp-action="Detail" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary py-1 px-2" style="border-radius: 6px; font-size: 0.78rem;">
+                                    <i class="bi bi-pencil-square"></i> Cập nhật
+                                </a>
+                            </td>
                         </tr>
                     }
-                    @if (!Model.RecentBookings.Any())
-                    {
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Chưa có booking nào</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-check-circle fs-3 text-success d-block mb-1"></i>
+                            Hiện tại không có ticket yêu cầu nào cần xử lý
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function updateLiveClock() {
+            var now = new Date();
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var seconds = String(now.getSeconds()).padStart(2, '0');
+            var timeString = hours + ":" + minutes + ":" + seconds;
+
+            var days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+            var dayName = days[now.getDay()];
+            var date = String(now.getDate()).padStart(2, '0');
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var year = now.getFullYear();
+            var dateString = dayName + ", " + date + "/" + month + "/" + year;
+
+            var clockEl = document.getElementById("liveClockDisplay");
+            var dateEl = document.getElementById("liveDateDisplay");
+            if (clockEl) clockEl.textContent = timeString;
+            if (dateEl) dateEl.textContent = dateString;
+        }
+
+        updateLiveClock();
+        setInterval(updateLiveClock, 1000);
+    </script>
+}

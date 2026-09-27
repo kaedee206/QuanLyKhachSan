@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using QuanLyKhachSan.Models.ViewModels;
 using QuanLyKhachSan.Services;
 using System.Security.Claims;
@@ -12,6 +13,7 @@ namespace QuanLyKhachSan.Controllers
         private readonly RoomService _roomService;
         private readonly ServiceManagementService _serviceService;
         private readonly EmailSftpService _emailService;
+        private readonly EmailRateLimiter _rateLimiter;
 
         public BookingController(
             BookingService bookingService,
@@ -23,6 +25,7 @@ namespace QuanLyKhachSan.Controllers
             _roomService = roomService;
             _serviceService = serviceService;
             _emailService = emailService;
+            _rateLimiter = EmailRateLimiter.Instance;
         }
 
         [HttpGet]
@@ -57,6 +60,12 @@ namespace QuanLyKhachSan.Controllers
 
                 await _emailService.SendBookingConfirmationEmail(booking);
 
+                if (!string.IsNullOrEmpty(booking.Email))
+                {
+                    var rateKey = $"booking_conf:{booking.BookingCode}:{booking.Email}";
+                    _rateLimiter.CheckAndConsume(rateKey, cooldownSeconds: 60, maxInWindow: 3, windowMinutes: 30);
+                }
+
                 return RedirectToAction("Confirmation", new { code = booking.BookingCode });
             }
             catch (Exception ex)
@@ -72,7 +81,64 @@ namespace QuanLyKhachSan.Controllers
         {
             var detail = await _bookingService.GetBookingDetailByCode(code);
             if (detail == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(detail.Booking.Email))
+            {
+                var rateKey = $"booking_conf:{detail.Booking.BookingCode}:{detail.Booking.Email}";
+                ViewBag.ResendCooldownSeconds = _rateLimiter.GetRemainingCooldown(rateKey, cooldownSeconds: 60);
+            }
+            else
+            {
+                ViewBag.ResendCooldownSeconds = 0;
+            }
+
             return View(detail);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendConfirmationEmail(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                TempData["Error"] = "Mã đặt phòng không hợp lệ.";
+                return RedirectToAction("Lookup");
+            }
+
+            var detail = await _bookingService.GetBookingDetailByCode(code);
+            if (detail == null)
+            {
+                TempData["Error"] = "Không tìm thấy thông tin đặt phòng.";
+                return RedirectToAction("Lookup");
+            }
+
+            var booking = detail.Booking;
+            if (string.IsNullOrWhiteSpace(booking.Email))
+            {
+                TempData["Error"] = "Đơn đặt phòng này không có thông tin email để gửi lại.";
+                return RedirectToAction("Confirmation", new { code = booking.BookingCode });
+            }
+
+            // Rate limit: 60s cooldown, max 3 in 30 minutes
+            var rateKey = $"booking_conf:{booking.BookingCode}:{booking.Email}";
+            var rateCheck = _rateLimiter.CheckAndConsume(rateKey, cooldownSeconds: 60, maxInWindow: 3, windowMinutes: 30);
+            if (!rateCheck.Allowed)
+            {
+                TempData["Error"] = rateCheck.Message;
+                return RedirectToAction("Confirmation", new { code = booking.BookingCode });
+            }
+
+            try
+            {
+                await _emailService.SendBookingConfirmationEmail(booking);
+                TempData["Success"] = $"Đã gửi lại email xác nhận đặt phòng tới {booking.Email}. Quý khách vui lòng kiểm tra hộp thư (kể cả mục Spam).";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Không thể gửi email lúc này: {ex.Message}";
+            }
+
+            return RedirectToAction("Confirmation", new { code = booking.BookingCode });
         }
 
         [HttpGet]
@@ -227,7 +293,17 @@ namespace QuanLyKhachSan.Controllers
             {
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var (booking, invoice) = await _bookingService.CheckOut(code, model, userId);
-                TempData["Success"] = $"Check-out thành công. Hóa đơn: {invoice.InvoiceNumber}";
+                
+                try
+                {
+                    await _emailService.SendCheckOutInvoiceReceiptEmail(invoice);
+                }
+                catch
+                {
+                    // Email sending is fire-and-forget for client UX
+                }
+
+                TempData["Success"] = $"Check-out thành công. Hóa đơn: {invoice.InvoiceNumber} đã được gửi tới email khách hàng";
                 return RedirectToAction("Detail", "Invoice", new { id = invoice.InvoiceNumber });
             }
             catch (Exception ex)

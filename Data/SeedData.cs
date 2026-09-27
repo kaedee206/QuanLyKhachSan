@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using QuanLyKhachSan.Data;
+using QuanLyKhachSan.Helpers;
 using QuanLyKhachSan.Models.Entities;
 using QuanLyKhachSan.Models.Enums;
+using System.IO;
+using System.Text;
 
 namespace QuanLyKhachSan.Data
 {
@@ -179,19 +182,33 @@ namespace QuanLyKhachSan.Data
                 logger.LogInformation("Đã tạo {Count} phòng", rooms.Count);
 
                 // ════════════════════════════════════════════════════════
-                // 4. TẠO NGƯỜI DÙNG (Users)
+                // 4. TẠO NGƯỜI DÙNG (Users) với mật khẩu ngẫu nhiên 32 ký tự
                 // ════════════════════════════════════════════════════════
+                var credsBuilder = new StringBuilder();
+                credsBuilder.AppendLine("================================================================================");
+                credsBuilder.AppendLine($"SUN HOTEL - GENERATED SEED CREDENTIALS ({DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC)");
+                credsBuilder.AppendLine("SECURITY NOTICE: 32-character randomized CSPRNG passwords generated for all accounts.");
+                credsBuilder.AppendLine("Upper + Lower + Numbers + Special Characters. DO NOT COMMIT TO VERSION CONTROL.");
+                credsBuilder.AppendLine("================================================================================");
+
+                string CreateSeedPassword(string username, string role)
+                {
+                    string pass = PasswordGenerator.Generate(32);
+                    credsBuilder.AppendLine($"Role: {role,-14} | Username: {username,-15} | Password: {pass}");
+                    return pass;
+                }
+
                 var users = new List<User>
                 {
-                    // Admin
+                    // Admin - Lường Minh Hiếu
                     new User
                     {
                         Username = "admin",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Admin@123456", 10),
-                        FullName = "Nguyen Van Admin",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("admin", "Admin"), 10),
+                        FullName = "Lường Minh Hiếu",
                         Role = UserRole.Admin,
-                        Email = "admin@sunhotel.vn",
-                        Phone = "0901234567",
+                        Email = "nguyenthaitrunghieu123@gmail.com",
+                        Phone = "0342144054",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     },
@@ -199,8 +216,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "manager",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Manager@123", 10),
-                        FullName = "Trần Thị Quản Lý",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("manager", "Manager"), 10),
+                        FullName = "Trần Thị Mai Anh",
                         Role = UserRole.Manager,
                         Email = "manager@sunhotel.vn",
                         Phone = "0902345678",
@@ -211,8 +228,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "reception1",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Ltan@123456", 10),
-                        FullName = "Lê Thị Lễ Tân",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("reception1", "Receptionist"), 10),
+                        FullName = "Lê Thị Thùy Linh",
                         Role = UserRole.Receptionist,
                         Email = "reception1@sunhotel.vn",
                         Phone = "0903456789",
@@ -222,8 +239,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "reception2",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Nva@12345678", 10),
-                        FullName = "Nguyen Van A",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("reception2", "Receptionist"), 10),
+                        FullName = "Nguyễn Văn Tuấn",
                         Role = UserRole.Receptionist,
                         Email = "reception2@sunhotel.vn",
                         Phone = "0904567890",
@@ -234,8 +251,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "housekeep1",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Hkeep@123456", 10),
-                        FullName = "Phạm Thị Buồng",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("housekeep1", "Housekeeping"), 10),
+                        FullName = "Phạm Thị Hồng",
                         Role = UserRole.Housekeeping,
                         Email = "housekeep1@sunhotel.vn",
                         Phone = "0905678901",
@@ -245,8 +262,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "housekeep2",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Hkeep2@123456", 10),
-                        FullName = "Hoang Van Dung",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("housekeep2", "Housekeeping"), 10),
+                        FullName = "Hoàng Văn Dũng",
                         Role = UserRole.Housekeeping,
                         Email = "housekeep2@sunhotel.vn",
                         Phone = "0906789012",
@@ -257,11 +274,47 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "maintenance1",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Maint@123456", 10),
-                        FullName = "Vo Van Ky",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("maintenance1", "Maintenance"), 10),
+                        FullName = "Võ Văn Kỷ",
                         Role = UserRole.Maintenance,
                         Email = "maintenance@sunhotel.vn",
                         Phone = "0907890123",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    // Kitchen (Bếp)
+                    new User
+                    {
+                        Username = "bep1",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("bep1", "Kitchen"), 10),
+                        FullName = "Nguyễn Hùng Cường",
+                        Role = UserRole.Kitchen,
+                        Email = "bep1@sunhotel.vn",
+                        Phone = "0908123456",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    // Bar (Quầy bar)
+                    new User
+                    {
+                        Username = "bar1",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("bar1", "Bar"), 10),
+                        FullName = "Đinh Gia Huy",
+                        Role = UserRole.Bar,
+                        Email = "bar1@sunhotel.vn",
+                        Phone = "0908234567",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    // Inventory (Kho & Vật tư)
+                    new User
+                    {
+                        Username = "kho1",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("kho1", "Inventory"), 10),
+                        FullName = "Phan Thị Thu Hà",
+                        Role = UserRole.Inventory,
+                        Email = "kho1@sunhotel.vn",
+                        Phone = "0908345678",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     },
@@ -269,8 +322,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "customer001",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Cust@123456", 10),
-                        FullName = "Tran Van Khach",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("customer001", "Customer"), 10),
+                        FullName = "Trần Văn Khánh",
                         Role = UserRole.Customer,
                         Email = "khach1@email.com",
                         Phone = "0912345678",
@@ -280,8 +333,8 @@ namespace QuanLyKhachSan.Data
                     new User
                     {
                         Username = "customer002",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Cust2@123456", 10),
-                        FullName = "Hoang Thi Minh",
+                        Password = BCrypt.Net.BCrypt.HashPassword(CreateSeedPassword("customer002", "Customer"), 10),
+                        FullName = "Hoàng Thị Minh",
                         Role = UserRole.Customer,
                         Email = "khach2@email.com",
                         Phone = "0923456789",
@@ -291,7 +344,20 @@ namespace QuanLyKhachSan.Data
                 };
                 context.Users.AddRange(users);
                 await context.SaveChangesAsync();
-                logger.LogInformation("Đã tạo {Count} người dùng", users.Count);
+
+                try
+                {
+                    var credsPath = Path.Combine(Directory.GetCurrentDirectory(), "credentials.generated.txt");
+                    await File.WriteAllTextAsync(credsPath, credsBuilder.ToString());
+                    logger.LogWarning("Đã sinh mật khẩu ngẫu nhiên 32 ký tự cho tất cả tài khoản mẫu và lưu vào: {Path}", credsPath);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Không thể ghi file credentials.generated.txt. Hãy xem thông tin tài khoản qua log console.");
+                    Console.WriteLine(credsBuilder.ToString());
+                }
+
+                logger.LogInformation("Đã tạo {Count} người dùng với mật khẩu ngẫu nhiên 32 ký tự", users.Count);
 
                 // ════════════════════════════════════════════════════════
                 // 5. TẠO BOOKING MẪU
@@ -635,43 +701,8 @@ namespace QuanLyKhachSan.Data
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Lỗi khi khởi tạo SeedData. Thử fix schema và thử lại...");
-                // Thử fix schema bằng raw SQL rồi khởi tạo lại
-                try
-                {
-#pragma warning disable EF1002 // Chỉ hardcode table/column name, không có user input
-                    await context.Database.ExecuteSqlRawAsync(@"
-                        DECLARE @sql NVARCHAR(MAX) = N'';
-                        SELECT @sql += N'ALTER TABLE [dbo].[booking] DROP CONSTRAINT ' + QUOTENAME(dc.name) + ';'
-                        FROM sys.default_constraints dc
-                        JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
-                        WHERE dc.parent_object_id = OBJECT_ID('booking') AND c.name = 'booking_code';
-                        EXEC sp_executesql @sql;
-                        ALTER TABLE [dbo].[booking] ALTER COLUMN booking_code NVARCHAR(20) NOT NULL;
-                    ");
-#pragma warning restore EF1002
-                    logger.LogInformation("Đã fix booking_code column");
-
-#pragma warning disable EF1002 // Chỉ hardcode table/column name, không có user input
-                    await context.Database.ExecuteSqlRawAsync(@"
-                        DECLARE @sql NVARCHAR(MAX) = N'';
-                        SELECT @sql += N'ALTER TABLE [dbo].[ticket] DROP CONSTRAINT ' + QUOTENAME(dc.name) + ';'
-                        FROM sys.default_constraints dc
-                        JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
-                        WHERE dc.parent_object_id = OBJECT_ID('ticket') AND c.name = 'ticket_number';
-                        EXEC sp_executesql @sql;
-                        ALTER TABLE [dbo].[ticket] ALTER COLUMN ticket_number NVARCHAR(30) NOT NULL;
-                    ");
-#pragma warning restore EF1002
-                    logger.LogInformation("Đã fix ticket_number column");
-
-                    // Retry initialization from the beginning
-                    return; // Exit gracefully - let next run create proper data
-                }
-                catch (Exception fixEx)
-                {
-                    logger.LogError(fixEx, "Không thể fix schema, cần xóa database thủ công");
-                }
+                logger.LogError(ex, "Lỗi khi khởi tạo SeedData.");
+                throw;
             }
         }
 
@@ -681,6 +712,65 @@ namespace QuanLyKhachSan.Data
         /// </summary>
         private static async Task FixUserRolesAsync(SunHotelDbContext context, ILogger logger)
         {
+            // Cập nhật thông tin admin theo yêu cầu mới nhất (Lường Minh Hiếu)
+            var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+            if (adminUser != null)
+            {
+                adminUser.FullName = "Lường Minh Hiếu";
+                adminUser.Phone = "0342144054";
+                adminUser.Email = "nguyenthaitrunghieu123@gmail.com";
+                adminUser.Role = UserRole.Admin;
+                adminUser.IsActive = true;
+            }
+
+            // Đảm bảo các role mới có tài khoản mẫu: bep1 (Kitchen), bar1 (Bar), kho1 (Inventory)
+            if (!await context.Users.AnyAsync(u => u.Username == "bep1"))
+            {
+                context.Users.Add(new User
+                {
+                    Username = "bep1",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Bep@SunHotel2026", 10),
+                    FullName = "Nguyễn Hùng Cường",
+                    Role = UserRole.Kitchen,
+                    Email = "bep1@sunhotel.vn",
+                    Phone = "0908123456",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (!await context.Users.AnyAsync(u => u.Username == "bar1"))
+            {
+                context.Users.Add(new User
+                {
+                    Username = "bar1",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Bar@SunHotel2026", 10),
+                    FullName = "Đinh Gia Huy",
+                    Role = UserRole.Bar,
+                    Email = "bar1@sunhotel.vn",
+                    Phone = "0908234567",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (!await context.Users.AnyAsync(u => u.Username == "kho1"))
+            {
+                context.Users.Add(new User
+                {
+                    Username = "kho1",
+                    Password = BCrypt.Net.BCrypt.HashPassword("Kho@SunHotel2026", 10),
+                    FullName = "Phan Thị Thu Hà",
+                    Role = UserRole.Inventory,
+                    Email = "kho1@sunhotel.vn",
+                    Phone = "0908345678",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await context.SaveChangesAsync();
+
             var roleMapping = new Dictionary<string, UserRole>
             {
                 { "admin", UserRole.Admin },
@@ -690,23 +780,17 @@ namespace QuanLyKhachSan.Data
                 { "housekeep1", UserRole.Housekeeping },
                 { "housekeep2", UserRole.Housekeeping },
                 { "maintenance1", UserRole.Maintenance },
+                { "bep1", UserRole.Kitchen },
+                { "bar1", UserRole.Bar },
+                { "kho1", UserRole.Inventory },
                 { "customer001", UserRole.Customer },
                 { "customer002", UserRole.Customer }
             };
 
-            var usersToFix = context.Users.Where(u => roleMapping.Keys.Contains(u.Username)).ToList();
-            if (!usersToFix.Any())
-            {
-                logger.LogWarning("CRITICAL: Không tìm thấy bất kỳ tài khoản test nào trong database!");
-                throw new InvalidOperationException(
-                    "CRITICAL: Database thiếu tài khoản test! " +
-                    "Vui lòng chạy SeedData mỗi lần đầu tiên bằng cách xóa toàn bộ bảng User.");
-            }
-
+            var usersToFix = await context.Users.Where(u => roleMapping.Keys.Contains(u.Username)).ToListAsync();
             var invalidUsers = usersToFix.Where(u => u.Role != roleMapping[u.Username]).ToList();
             if (invalidUsers.Any())
             {
-                // Tự động fix role sai thay vì throw - đảm bảo app vẫn chạy được
                 foreach (var user in invalidUsers)
                 {
                     var oldRole = user.Role.ToString();
@@ -718,8 +802,7 @@ namespace QuanLyKhachSan.Data
                 logger.LogInformation("Đã tự động fix {Count} tài khoản có role sai", invalidUsers.Count);
             }
 
-            logger.LogInformation("All {Count} test user roles are correct", usersToFix.Count);
-            await Task.CompletedTask;
+            logger.LogInformation("Tất cả tài khoản hệ thống đã được cập nhật vai trò và dữ liệu chuẩn xác.");
         }
     }
 }

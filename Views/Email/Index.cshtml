@@ -1,0 +1,417 @@
+@model QuanLyKhachSan.Models.ViewModels.EmailIndexViewModel
+@using QuanLyKhachSan.Models.Enums
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Nhật ký & Trạng thái Email";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="mb-0" style="color: #1A3C5E; font-weight: 700;">
+            <i class="bi bi-envelope-check me-2" style="color: #2E8B8B;"></i>
+            Nhật ký & Trạng thái Email
+        </h4>
+        <small class="text-muted">Theo dõi tình trạng gửi email tới khách hàng và quản lý tự động gửi lại (Self-Check Auto Retry)</small>
+    </div>
+    <div class="d-flex gap-2">
+        <form asp-controller="Email" asp-action="RetryAllFailed" method="post" onsubmit="return confirm('Bạn có chắc muốn tự động kiểm tra Self-Check và gửi lại tất cả email đang bị lỗi không?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-danger shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-arrow-repeat me-1"></i> Gửi lại tất cả email lỗi
+            </button>
+        </form>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload();" style="border-radius: 8px;">
+            <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+    </div>
+</div>
+
+<!-- Alert thông báo -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Hàng thống kê tổng quan -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #1A3C5E;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 me-3" style="background: rgba(26, 60, 94, 0.1);">
+                    <i class="bi bi-envelope-paper" style="font-size: 1.5rem; color: #1A3C5E;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.85rem;">Tổng số email</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #1A3C5E;">@Model.TotalEmails</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #198754;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 me-3" style="background: rgba(25, 135, 84, 0.1);">
+                    <i class="bi bi-check2-circle" style="font-size: 1.5rem; color: #198754;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.85rem;">Đã gửi thành công</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #198754;">@Model.SentCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #ffc107;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 me-3" style="background: rgba(255, 193, 7, 0.15);">
+                    <i class="bi bi-hourglass-split" style="font-size: 1.5rem; color: #ffc107;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.85rem;">Chờ gửi / Retry</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #d97706;">@Model.PendingCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #dc3545;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 me-3" style="background: rgba(220, 53, 69, 0.1);">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem; color: #dc3545;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size: 0.85rem;">Gửi thất bại</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;">@Model.FailedCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trạng thái kết nối SMTP Backend -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #fff;">
+    <div class="card-body py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center">
+            <span class="d-inline-block rounded-circle me-2" style="width: 12px; height: 12px; background-color: @(Model.IsSmtpHealthy ? "#198754" : "#dc3545"); box-shadow: 0 0 8px @(Model.IsSmtpHealthy ? "rgba(25,135,84,0.6)" : "rgba(220,53,69,0.6)");"></span>
+            <strong>Trạng thái kết nối SMTP Backend:</strong>
+            <span class="ms-2 badge @(Model.IsSmtpHealthy ? "bg-success" : "bg-danger")">
+                @(Model.IsSmtpHealthy ? "Sẵn sàng" : "Không kết nối được")
+            </span>
+            <span class="ms-3 text-muted small d-none d-md-inline">@Model.SmtpStatusMessage</span>
+        </div>
+        <div class="text-muted small">
+            <i class="bi bi-cpu me-1"></i> Tự động kiểm tra & gửi lại ngầm: <strong>Mỗi 60s</strong> (Self-Check Enabled)
+        </div>
+    </div>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-6 col-sm-12">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0" style="border-radius: 8px 0 0 8px;">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm theo email khách hàng hoặc tiêu đề..." value="@Model.SearchEmail" style="border-radius: 0 8px 8px 0;" />
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-8">
+                <select name="status" class="form-select" style="border-radius: 8px;">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="@EmailStatus.Sent" selected="@(Model.StatusFilter == EmailStatus.Sent)">Đã gửi thành công</option>
+                    <option value="@EmailStatus.Pending" selected="@(Model.StatusFilter == EmailStatus.Pending)">Đang chờ gửi / Retry</option>
+                    <option value="@EmailStatus.Failed" selected="@(Model.StatusFilter == EmailStatus.Failed)">Gửi thất bại</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100" style="background: #2E8B8B; border-color: #2E8B8B; border-radius: 8px;">
+                    <i class="bi bi-filter"></i> Lọc
+                </button>
+                @if (!string.IsNullOrEmpty(Model.SearchEmail) || Model.StatusFilter.HasValue)
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;" title="Xóa lọc">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Danh sách Email -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background: #f8fafc; font-size: 0.85rem; color: #64748b;">
+                <tr>
+                    <th style="width: 60px;" class="text-center">#</th>
+                    <th>Người nhận (Khách hàng)</th>
+                    <th>Tiêu đề & Mẫu</th>
+                    <th style="width: 150px;">Trạng thái</th>
+                    <th style="width: 100px;" class="text-center">Lần thử</th>
+                    <th style="width: 170px;">Thời gian</th>
+                    <th style="width: 160px;" class="text-end pe-3">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Emails.Any())
+                {
+                    foreach (var item in Model.Emails)
+                    {
+                        <tr>
+                            <td class="text-center text-muted fw-bold">@item.Id</td>
+                            <td>
+                                <div class="fw-semibold text-dark">
+                                    <i class="bi bi-person me-1 text-muted"></i> @item.ToEmail
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 320px; font-weight: 500;" title="@item.Subject">
+                                    @item.Subject
+                                </div>
+                                <div class="text-muted small">
+                                    <span class="badge bg-light text-dark border">@item.Template</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(item.LastError) && item.Status == EmailStatus.Failed)
+                                {
+                                    <div class="text-danger small mt-1 text-truncate" style="max-width: 380px;" title="@item.LastError">
+                                        <i class="bi bi-exclamation-circle me-1"></i> @item.LastError
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @item.StatusBadgeClass px-2 py-1" style="font-size: 0.8rem; border-radius: 6px;">
+                                    @if (item.Status == EmailStatus.Sent)
+                                    {
+                                        <i class="bi bi-check2 me-1"></i>
+                                    }
+                                    else if (item.Status == EmailStatus.Failed)
+                                    {
+                                        <i class="bi bi-x-circle me-1"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-hourglass me-1"></i>
+                                    }
+                                    @item.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill bg-light text-dark border">
+                                    @item.Attempts / 3
+                                </span>
+                            </td>
+                            <td class="small text-muted">
+                                @if (item.SentAt.HasValue)
+                                {
+                                    <div><i class="bi bi-send-check text-success me-1"></i> @item.SentAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                }
+                                <div><i class="bi bi-clock me-1"></i> Tạo: @item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-info" style="border-radius: 6px 0 0 6px;" onclick="openSelfCheckModal(@item.Id)" title="Kiểm tra Self-Check">
+                                        <i class="bi bi-shield-check"></i> Check
+                                    </button>
+                                    @if (item.CanRetry)
+                                    {
+                                        <form asp-controller="Email" asp-action="Retry" asp-route-id="@item.Id" asp-route-force="true" method="post" class="d-inline" onsubmit="return confirm('Gửi lại email này ngay lập tức?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-primary" style="border-radius: 0 6px 6px 0;" title="Thử gửi lại ngay">
+                                                <i class="bi bi-arrow-repeat"></i> Gửi lại
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2.5rem; display: block; margin-bottom: 10px; color: #cbd5e1;"></i>
+                            Không tìm thấy email nào phù hợp với điều kiện tìm kiếm.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Chi tiết Self-Check -->
+<div class="modal fade" id="selfCheckModal" tabindex="-1" aria-labelledby="selfCheckModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="selfCheckModalLabel" style="color: #1A3C5E;">
+                    <i class="bi bi-shield-check text-success me-2"></i> Kết quả Self-Check chuyển phát Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div id="modalLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang kiểm tra...</span>
+                    </div>
+                    <div class="text-muted mt-2">Đang tự kiểm tra tình trạng email và hệ thống...</div>
+                </div>
+
+                <div id="modalContent" style="display: none;">
+                    <!-- Thẻ tóm tắt kết quả -->
+                    <div id="checkSummaryBox" class="alert mb-4" style="border-radius: 10px;">
+                        <h6 class="fw-bold mb-1" id="checkSummaryTitle"></h6>
+                        <div id="checkSummaryDetail" class="small"></div>
+                    </div>
+
+                    <!-- Bảng thông tin email -->
+                    <div class="row g-2 mb-3 small">
+                        <div class="col-sm-6">
+                            <div class="p-2 bg-light rounded">
+                                <span class="text-muted">Người nhận:</span> <strong id="modalToEmail"></strong>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 bg-light rounded">
+                                <span class="text-muted">Trạng thái hiện tại:</span> <span id="modalCurrentStatus" class="badge"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checklist các điều kiện -->
+                    <h6 class="fw-bold mb-3" style="color: #1A3C5E;">
+                        <i class="bi bi-list-check me-1"></i> Báo cáo kiểm tra các tiêu chí an toàn (Safety Checklist)
+                    </h6>
+                    <ul class="list-group list-group-flush mb-3" id="modalChecklist">
+                    </ul>
+
+                    <div id="modalLastErrorContainer" style="display: none;" class="alert alert-danger small p-2 mt-2">
+                        <strong>Lỗi ghi nhận lần gần nhất:</strong> <span id="modalLastError"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius: 8px;">Đóng</button>
+                <form id="modalRetryForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" id="btnModalRetry" class="btn btn-primary btn-sm" style="background: #2E8B8B; border-color: #2E8B8B; border-radius: 8px;">
+                        <i class="bi bi-arrow-repeat me-1"></i> Gửi lại ngay
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    async function openSelfCheckModal(emailId) {
+        var modal = new bootstrap.Modal(document.getElementById('selfCheckModal'));
+        modal.show();
+
+        document.getElementById('modalLoading').style.display = 'block';
+        document.getElementById('modalContent').style.display = 'none';
+
+        try {
+            const response = await fetch(`/Email/CheckStatus/${emailId}`);
+            const res = await response.json();
+
+            if (!res.success) {
+                alert(res.message || 'Không thể lấy thông tin email.');
+                modal.hide();
+                return;
+            }
+
+            const data = res.data;
+            const check = data.selfCheck;
+
+            document.getElementById('modalToEmail').textContent = data.toEmail;
+            
+            const statusEl = document.getElementById('modalCurrentStatus');
+            statusEl.textContent = data.statusDisplay;
+            statusEl.className = 'badge ' + data.statusBadgeClass;
+
+            // Summary box
+            const summaryBox = document.getElementById('checkSummaryBox');
+            const summaryTitle = document.getElementById('checkSummaryTitle');
+            const summaryDetail = document.getElementById('checkSummaryDetail');
+
+            if (data.isDelivered) {
+                summaryBox.className = 'alert alert-success';
+                summaryTitle.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Email đã gửi thành công tới khách hàng!';
+                summaryDetail.textContent = `Email đã được gửi đến ${data.toEmail} vào lúc ${data.sentAt ? new Date(data.sentAt).toLocaleString('vi-VN') : ''}.`;
+            } else if (check && check.canSend) {
+                summaryBox.className = 'alert alert-info';
+                summaryTitle.innerHTML = '<i class="bi bi-info-circle-fill me-2"></i> Sẵn sàng gửi lại!';
+                summaryDetail.textContent = check.summary;
+            } else {
+                summaryBox.className = 'alert alert-warning';
+                summaryTitle.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i> Chưa đủ điều kiện gửi lại tự động';
+                summaryDetail.textContent = check ? check.summary : 'Đang xử lý';
+            }
+
+            // Checklist
+            const checklistEl = document.getElementById('modalChecklist');
+            checklistEl.innerHTML = '';
+
+            if (check && check.checkMessages) {
+                check.checkMessages.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item px-0 py-2 border-0 d-flex align-items-center small';
+                    
+                    if (msg.startsWith('✓')) {
+                        li.innerHTML = `<span class="text-success fw-bold me-2"><i class="bi bi-check-circle-fill"></i></span> <span>${msg.substring(2)}</span>`;
+                    } else if (msg.startsWith('✗')) {
+                        li.innerHTML = `<span class="text-danger fw-bold me-2"><i class="bi bi-x-circle-fill"></i></span> <span class="text-danger">${msg.substring(2)}</span>`;
+                    } else {
+                        li.innerHTML = `<span class="text-warning fw-bold me-2"><i class="bi bi-hourglass-split"></i></span> <span>${msg}</span>`;
+                    }
+                    checklistEl.appendChild(li);
+                });
+            }
+
+            // Last error
+            const errBox = document.getElementById('modalLastErrorContainer');
+            if (data.lastError) {
+                errBox.style.display = 'block';
+                document.getElementById('modalLastError').textContent = data.lastError;
+            } else {
+                errBox.style.display = 'none';
+            }
+
+            // Retry Form action
+            const form = document.getElementById('modalRetryForm');
+            form.action = `/Email/Retry/${data.id}?force=true`;
+
+            const btnRetry = document.getElementById('btnModalRetry');
+            if (data.isDelivered) {
+                btnRetry.style.display = 'none';
+            } else {
+                btnRetry.style.display = 'inline-block';
+            }
+
+            document.getElementById('modalLoading').style.display = 'none';
+            document.getElementById('modalContent').style.display = 'block';
+
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối khi kiểm tra Self-Check.');
+            modal.hide();
+        }
+    }
+</script>
+}

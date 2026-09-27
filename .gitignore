@@ -23,6 +23,8 @@ appsettings.Staging.json
 
 ## Test / Dev files with credentials
 test_accounts.txt
+credentials.generated.txt
+.ruff_cache/
 
 ## Environment files
 .env

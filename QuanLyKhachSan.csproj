@@ -5,20 +5,24 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>QuanLyKhachSan</RootNamespace>
+    <!-- Required: SqlClient needs ICU globalization (en-us culture). Alpine images are invariant by default. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Entity Framework Core + MS SQL Server -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 
-    <!-- Authentication & Authorization -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
+    <!-- Authentication & Security -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+
+    <!-- PostgreSQL EF Core Driver -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
 
     <!-- Logging -->
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
@@ -29,7 +33,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 
     <!-- SFTP / SSH -->
-    <PackageReference Include="SSH.NET" Version="2024.1.0" />
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 
 </Project>

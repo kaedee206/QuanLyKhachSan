@@ -16,10 +16,11 @@ namespace QuanLyKhachSan.Controllers
             _roomService = roomService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string range = "7days")
         {
-            var dashboard = await _reportService.GetDashboardSummary();
+            var dashboard = await _reportService.GetDashboardSummary(range);
             var roomGrid = await _roomService.GetRoomGrid();
+            dashboard.Floors = roomGrid.Floors;
             dashboard.RoomGrid = roomGrid.Floors.SelectMany(f => f.Rooms).ToList();
             return View(dashboard);
         }

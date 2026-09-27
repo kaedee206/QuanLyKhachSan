@@ -91,7 +91,7 @@ namespace QuanLyKhachSan.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUser(id);
-            TempData["Success"] = "Vô hiệu hóa tài khoản thành công";
+            TempData["Success"] = "Đã xóa vĩnh viễn tài khoản người dùng khỏi hệ thống";
             return RedirectToAction("Index");
         }
 

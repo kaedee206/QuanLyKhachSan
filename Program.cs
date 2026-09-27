@@ -5,15 +5,31 @@ using QuanLyKhachSan.BackgroundServices;
 using QuanLyKhachSan.Data;
 using QuanLyKhachSan.Models;
 using QuanLyKhachSan.Models.Enums;
+using QuanLyKhachSan.Helpers;
+using QuanLyKhachSan.Middleware;
 using QuanLyKhachSan.Services;
+using QuanLyKhachSan.Services.AI;
 using Serilog;
+
+// Allow flexible DateTime Kind handling for Npgsql (PostgreSQL)
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+// Load .env file (local dev). In Docker/production, env vars are injected directly.
+// NoClobber() ensures already-set env vars (e.g. from Docker) are not overwritten.
+DotNetEnv.Env.NoClobber().Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://+:5000");
+// Resolve ${VAR_NAME} placeholders in appsettings.json using environment variables
+builder.Configuration.AddEnvInterpolation();
+
 
 // Persist Data Protection keys để antiforgery/auth cookies không bị mất khi container restart
-var keysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
+// Docker: set DataProtection:KeysPath=/app/keys via env var
+// Local dev: defaults to {ProjectDir}/keys/
+var keysPath = builder.Configuration["DataProtection:KeysPath"]
+    ?? Path.Combine(builder.Environment.ContentRootPath, "keys");
+Directory.CreateDirectory(keysPath); // Ensure dir exists in all environments
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
     .SetApplicationName("SunHotel")
@@ -33,7 +49,7 @@ builder.Host.UseSerilog();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<SunHotelDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -100,12 +116,43 @@ builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<MoMoService>();
 builder.Services.AddScoped<EmailSftpService>();
 builder.Services.AddScoped<SePayService>();
+builder.Services.AddSingleton(EmailRateLimiter.Instance);
+
+// AI Services
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<AiToolRegistry>();
+builder.Services.AddScoped<AiPromptBuilder>();
+builder.Services.AddScoped<AiSecurityGuard>();
+builder.Services.AddScoped<AiToolExecutor>();
+builder.Services.AddScoped<AiChatService>();
 
 builder.Services.AddHostedService<QuanLyKhachSan.BackgroundServices.SePayPollingService>();
+builder.Services.AddHostedService<QuanLyKhachSan.BackgroundServices.EmailRetryBackgroundService>();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
+// CORS for React frontend (dev: localhost:5173, prod: configurable via FRONTEND_URL env var)
+var frontendUrl = builder.Configuration["AppSettings:FrontendUrl"] ?? "http://localhost:5173";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactFrontend", policy =>
+    {
+        policy.WithOrigins(frontendUrl)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // Required for cookie-based auth
+    });
+});
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<AiRateLimitMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -113,6 +160,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseSession();
+app.UseCors("ReactFrontend");
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -157,59 +205,8 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        try
-        {
-            await db.Database.ExecuteSqlRawAsync(@"
-                DECLARE @sql NVARCHAR(MAX) = N'';
-                SELECT @sql += N'ALTER TABLE [dbo].[booking] DROP CONSTRAINT ' + QUOTENAME(name) + ';'
-                FROM sys.default_constraints
-                WHERE parent_object_id = OBJECT_ID('booking')
-                AND col_name(parent_object_id, parent_column_id) = 'booking_code';
-                IF @sql <> '' EXEC sp_executesql @sql;
-                ALTER TABLE [dbo].[booking] ALTER COLUMN booking_code NVARCHAR(20) NOT NULL;
-            ");
-            Log.Information("Database schema: booking_code column expanded to NVARCHAR(20)");
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Schema fix for booking_code failed (may already be correct)");
-        }
-
-        try
-        {
-            var sepayColumns = new[]
-            {
-                ("sepay_order_id", "NVARCHAR(100)"),
-                ("sepay_order_code", "NVARCHAR(100)"),
-                ("sepay_transaction_id", "NVARCHAR(100)"),
-                ("sepay_payment_method", "NVARCHAR(50)"),
-                ("sepay_order_status", "NVARCHAR(50)"),
-                ("sepay_created_at", "DATETIME2"),
-                ("sepay_paid_at", "DATETIME2"),
-                ("sepay_last_check_at", "DATETIME2"),
-                ("sepay_polling_expires_at", "DATETIME2")
-            };
-
-            var existingColumnsRaw = await db.Database
-                .SqlQueryRaw<string>("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'invoice'")
-                .ToListAsync();
-            var existingColumns = existingColumnsRaw.Select(c => c.ToLower()).ToHashSet();
-
-            foreach (var (colName, colType) in sepayColumns)
-            {
-                if (!existingColumns.Contains(colName.ToLower()))
-                {
-                    await db.Database.ExecuteSqlRawAsync(
-                        $"ALTER TABLE [dbo].[invoice] ADD [{colName}] {colType} NULL;");
-                    Log.Information("Database schema: Added column {ColumnName} to invoice table", colName);
-                }
-            }
-            Log.Information("Database schema: SePay columns checked/added successfully");
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Schema fix for SePay columns failed (may already exist)");
-        }
+        // Schema migration handled automatically by EnsureCreated() in SeedData
+        Log.Information("Database schema managed by EnsureCreated");
 
         try
         {

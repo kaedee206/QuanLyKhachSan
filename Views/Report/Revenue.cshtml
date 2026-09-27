@@ -94,6 +94,7 @@
                         <th class="border-0 py-2 text-center">Số hóa đơn</th>
                         <th class="border-0 py-2 text-end">Tiền phòng</th>
                         <th class="border-0 py-2 text-end">Tiền dịch vụ</th>
+                        <th class="border-0 py-2 text-end">Giảm giá</th>
                         <th class="border-0 py-2 text-end">Tổng doanh thu</th>
                     </tr>
                 </thead>
@@ -105,13 +106,14 @@
                             <td class="text-center">@row.InvoiceCount</td>
                             <td class="text-end">@row.RoomRevenue.ToString("N0") VNĐ</td>
                             <td class="text-end">@row.ServiceRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end text-danger">-@row.Discount.ToString("N0") VNĐ</td>
                             <td class="text-end fw-bold" style="color: #D4AF37;">@row.Revenue.ToString("N0") VNĐ</td>
                         </tr>
                     }
                     @if (!Model.Breakdown.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">Không có dữ liệu trong khoảng thời gian này</td>
+                            <td colspan="6" class="text-center text-muted py-4">Không có dữ liệu trong khoảng thời gian này</td>
                         </tr>
                     }
                 </tbody>
@@ -123,6 +125,7 @@
                             <td class="text-center fw-bold">@Model.TotalInvoices</td>
                             <td class="text-end fw-bold">@Model.RoomRevenue.ToString("N0") VNĐ</td>
                             <td class="text-end fw-bold">@Model.ServiceRevenue.ToString("N0") VNĐ</td>
+                            <td class="text-end fw-bold text-danger">-@Model.TotalDiscount.ToString("N0") VNĐ</td>
                             <td class="text-end fw-bold" style="color: #D4AF37; font-size: 1rem;">@Model.TotalRevenue.ToString("N0") VNĐ</td>
                         </tr>
                     </tfoot>

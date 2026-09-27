@@ -24,9 +24,13 @@ namespace QuanLyKhachSan.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public IActionResult Create(string? bookingCode = null, string? invoiceNumber = null)
         {
-            return View(new AddServiceViewModel());
+            return View(new AddServiceViewModel
+            {
+                BookingCode = bookingCode ?? string.Empty,
+                ReturnInvoiceNumber = invoiceNumber
+            });
         }
 
         [HttpPost]
@@ -40,6 +44,12 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 await _serviceService.AddService(model, userId);
                 TempData["Success"] = "Thêm dịch vụ thành công";
+
+                if (!string.IsNullOrEmpty(model.ReturnInvoiceNumber))
+                {
+                    return RedirectToAction("Detail", "Invoice", new { id = model.ReturnInvoiceNumber });
+                }
+
                 return RedirectToAction("Index");
             }
             catch (Exception ex)

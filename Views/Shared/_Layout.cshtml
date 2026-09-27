@@ -48,6 +48,11 @@
                                 <i class="bi bi-search me-1"></i> Tra c&#7913;u
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="CustomerPortal" asp-action="Login" style="color: #F0D060; font-weight: 600;">
+                                <i class="bi bi-door-open me-1"></i> C&#7893;ng kh&#225;ch h&#224;ng
+                            </a>
+                        </li>
                         <li class="nav-item ms-lg-2">
                             @if (User.Identity?.IsAuthenticated == true)
                             {
@@ -59,8 +64,8 @@
                             else
                             {
                                 <a class="btn btn-sm" asp-controller="Auth" asp-action="Login"
-                                   style="background: linear-gradient(135deg, #D4AF37, #F0D060); color: #1A3C5E; font-weight: 600; border-radius: 8px; padding: 6px 16px;">
-                                    <i class="bi bi-person-badge me-1"></i>Trang Nhân Viên
+                                   style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 16px;">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i> &#272;&#259;ng nh&#7853;p
                                 </a>
                             }
                         </li>
@@ -114,6 +119,9 @@
                         <a asp-controller="Room" asp-action="Listing" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">Xem ph&#242;ng</a>
                         <a asp-controller="Booking" asp-action="Create" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">&#272;&#7863;t ph&#242;ng</a>
                         <a asp-controller="Booking" asp-action="Lookup" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-decoration: none;">Tra c&#7913;u booking</a>
+                        <a asp-controller="CustomerPortal" asp-action="Login" style="display: block; color: #D4AF37; font-size: 0.85rem; text-decoration: none; font-weight: 500;">
+                            <i class="bi bi-door-open me-1"></i> C&#7893;ng d&#7883;ch v&#7909; kh&#225;ch l&#432;u tr&#250;
+                        </a>
                     </div>
                 </div>
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 2rem 0 1rem;" />
@@ -125,5 +133,8 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- ═══ AI CHAT WIDGET ═══ -->
+    <partial name="_AiChatWidget" />
 </body>
 </html>

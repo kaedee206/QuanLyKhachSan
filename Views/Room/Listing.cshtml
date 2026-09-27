@@ -3,6 +3,9 @@
     ViewData["Title"] = "Danh sách phòng - Sun Hotel";
     var roomTypes = ViewBag.RoomTypes as List<RoomType> ?? new List<RoomType>();
     var search = ViewBag.Search as RoomSearchViewModel ?? new RoomSearchViewModel();
+    var availableByType = ViewBag.AvailableByType as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var totalAvailableAll = ViewBag.TotalAvailableAll as int? ?? Model.Count(r => r.Status == RoomStatus.Available);
+    var totalRoomsAll = ViewBag.TotalRoomsAll as int? ?? Model.Count;
 }
 
 @section Styles {
@@ -205,13 +208,35 @@
 <!-- ═══ ROOM GRID ═══ -->
 <section style="padding: 0 0 4rem; background: #F5F0E8; min-height: 50vh;">
     <div class="container" style="padding-top: 2rem;">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-white text-dark border px-3 py-2" style="font-size: 0.88rem; border-radius: 12px; font-weight: 600;">
+                    <i class="bi bi-door-open text-primary me-1"></i> Tìm thấy <strong>@Model.Count</strong> phòng
+                </span>
+                @if (search.RoomTypeId.HasValue)
+                {
+                    var curType = roomTypes.FirstOrDefault(t => t.Id == search.RoomTypeId.Value);
+                    if (curType != null)
+                    {
+                        <span class="badge bg-light text-muted border px-3 py-2" style="font-size: 0.85rem; border-radius: 12px;">
+                            Đang lọc: <strong class="text-dark">@curType.Name</strong>
+                            <a asp-controller="Room" asp-action="Listing" 
+                               asp-route-CheckInDate="@(search.CheckInDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-CheckOutDate="@(search.CheckOutDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-NumGuests="@search.NumGuests"
+                               class="text-danger ms-2 text-decoration-none" title="Bỏ lọc">&times;</a>
+                        </span>
+                    }
+                }
+            </div>
+
+            <div class="text-muted" style="font-size: 0.85rem;">
+                <i class="bi bi-shield-check text-success me-1"></i> Giá phòng cam kết tốt nhất đã gồm thuế & dịch vụ
+            </div>
+        </div>
+
         @if (Model.Any())
         {
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="room-count-badge">
-                    <i class="bi bi-grid me-1"></i> @Model.Count phòng
-                </span>
-            </div>
 
             <div class="row g-4">
                 @foreach (var room in Model)

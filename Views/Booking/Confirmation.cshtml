@@ -389,6 +389,29 @@
                     }
                 </div>
 
+                <!-- Resend Email Card -->
+                @if (!string.IsNullOrEmpty(booking.Email))
+                {
+                    <div class="detail-card no-print">
+                        <h5 class="detail-card-title">
+                            <i class="bi bi-envelope-paper"></i> Email xác nhận
+                        </h5>
+                        <p style="font-size:0.83rem;color:#6b7280;margin-bottom:0.9rem;line-height:1.45;">
+                            Thông tin đặt phòng được gửi tới <strong class="text-dark">@booking.Email</strong>. Nếu chưa nhận được (kể cả hộp thư Spam), quý khách có thể gửi lại:
+                        </p>
+                        <form asp-controller="Booking" asp-action="ResendConfirmationEmail" method="post" id="resendEmailForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="code" value="@booking.BookingCode" />
+                            <button type="submit" id="btnResendEmail" class="btn btn-outline-muted w-100 d-flex align-items-center justify-content-center gap-2" @(ViewBag.ResendCooldownSeconds > 0 ? "disabled" : "")>
+                                <i class="bi bi-arrow-repeat"></i>
+                                <span id="resendEmailText">
+                                    @(ViewBag.ResendCooldownSeconds > 0 ? $"Gửi lại email sau {ViewBag.ResendCooldownSeconds}s" : "Gửi lại email xác nhận")
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                }
+
                 <!-- Info box -->
                 <div style="background:#F5F0E8;border-radius:12px;padding:1rem 1.25rem;border:1px solid rgba(212,175,55,0.2);">
                     <h6 style="font-size:0.8rem;font-weight:700;color:#D4AF37;margin-bottom:0.5rem;">
@@ -475,5 +498,34 @@
     })();
         </text>
     }
+
+    // Countdown timer cho nút gửi lại email xác nhận
+    (function() {
+        var cooldown = @(ViewBag.ResendCooldownSeconds ?? 0);
+        var btn = document.getElementById('btnResendEmail');
+        var txt = document.getElementById('resendEmailText');
+
+        if (cooldown > 0 && btn && txt) {
+            btn.disabled = true;
+            var timer = setInterval(function() {
+                cooldown--;
+                if (cooldown <= 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    txt.textContent = 'Gửi lại email xác nhận';
+                } else {
+                    txt.textContent = 'Gửi lại email sau ' + cooldown + 's';
+                }
+            }, 1000);
+        }
+
+        var form = document.getElementById('resendEmailForm');
+        if (form && btn) {
+            form.addEventListener('submit', function() {
+                btn.disabled = true;
+                if (txt) txt.textContent = 'Đang gửi lại email...';
+            });
+        }
+    })();
 </script>
 }

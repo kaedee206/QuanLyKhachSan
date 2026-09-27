@@ -22,7 +22,7 @@ namespace QuanLyKhachSan.Services
         {
             var query = _db.Rooms
                 .Include(r => r.RoomType)
-                .Where(r => r.Status == RoomStatus.Available && r.RoomType.IsActive);
+                .Where(r => r.RoomType.IsActive);
 
             if (search.RoomTypeId.HasValue)
                 query = query.Where(r => r.RoomTypeId == search.RoomTypeId.Value);
@@ -32,23 +32,23 @@ namespace QuanLyKhachSan.Services
 
             var rooms = await query.OrderBy(r => r.Floor).ThenBy(r => r.RoomNumber).ToListAsync();
 
-            if (search.CheckInDate.HasValue && search.CheckOutDate.HasValue)
+            var checkIn = search.CheckInDate ?? DateOnly.FromDateTime(DateTime.Today);
+            var checkOut = search.CheckOutDate ?? checkIn.AddDays(1);
+
+            var bookedRoomIds = await _db.Bookings
+                .Where(b =>
+                    b.RoomId != null &&
+                    b.Status != BookingStatus.Cancelled &&
+                    b.Status != BookingStatus.NoShow &&
+                    b.CheckInDate < checkOut &&
+                    b.CheckOutDate > checkIn)
+                .Select(b => b.RoomId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var r in rooms.Where(r => bookedRoomIds.Contains(r.Id)))
             {
-                var checkIn = search.CheckInDate.Value;
-                var checkOut = search.CheckOutDate.Value;
-
-                var bookedRoomIds = await _db.Bookings
-                    .Where(b =>
-                        b.RoomId != null &&
-                        b.Status != BookingStatus.Cancelled &&
-                        b.Status != BookingStatus.NoShow &&
-                        b.CheckInDate < checkOut &&
-                        b.CheckOutDate > checkIn)
-                    .Select(b => b.RoomId!.Value)
-                    .Distinct()
-                    .ToListAsync();
-
-                rooms = rooms.Where(r => !bookedRoomIds.Contains(r.Id)).ToList();
+                r.Status = RoomStatus.Occupied;
             }
 
             return rooms;
@@ -150,14 +150,14 @@ namespace QuanLyKhachSan.Services
             var room = await _db.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == roomId);
             if (room == null) throw new InvalidOperationException("Phòng không tồn tại");
 
-            if (room.Status != RoomStatus.Cleaning && room.Status != RoomStatus.Available)
-                throw new InvalidOperationException("Phòng phải ở trạng thái Cleaning hoặc Available");
-
-            if (status != RoomStatus.Cleaning && status != RoomStatus.Available)
-                throw new InvalidOperationException("Trạng thái dọn phòng phải là Cleaning hoặc Available");
+            if (room.Status == status)
+            {
+                return room;
+            }
 
             var oldStatus = room.Status;
             room.Status = status;
+            room.UpdatedAt = DateTime.UtcNow;
 
             _db.AuditLogs.Add(new AuditLog
             {
@@ -170,6 +170,7 @@ namespace QuanLyKhachSan.Services
             });
 
             await _db.SaveChangesAsync();
+            _logger.LogInformation("Room {RoomNumber} cleaning status updated: {OldStatus} -> {Status}", room.RoomNumber, oldStatus, status);
             return room;
         }
 

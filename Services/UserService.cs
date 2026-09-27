@@ -114,9 +114,27 @@ namespace QuanLyKhachSan.Services
             var user = await _db.Users.FindAsync(id);
             if (user == null) return false;
 
-            user.IsActive = false;
+            // Hủy liên kết khóa ngoại để tránh vi phạm ràng buộc dữ liệu
+            var assignedTickets = await _db.Tickets.Where(t => t.AssignedToId == id).ToListAsync();
+            foreach (var t in assignedTickets) t.AssignedToId = null;
+
+            var reportedTickets = await _db.Tickets.Where(t => t.ReportedById == id).ToListAsync();
+            if (reportedTickets.Any())
+            {
+                var fallbackUser = await _db.Users.FirstOrDefaultAsync(u => u.Id != id && u.Role == UserRole.Admin)
+                    ?? await _db.Users.FirstOrDefaultAsync(u => u.Id != id);
+                if (fallbackUser != null)
+                {
+                    foreach (var t in reportedTickets) t.ReportedById = fallbackUser.Id;
+                }
+            }
+
+            var createdInvoices = await _db.Invoices.Where(i => i.CreatedById == id).ToListAsync();
+            foreach (var inv in createdInvoices) inv.CreatedById = null;
+
+            _db.Users.Remove(user);
             await _db.SaveChangesAsync();
-            _logger.LogInformation("User soft-deleted: {UserId}", id);
+            _logger.LogInformation("User permanently deleted: {UserId}, Username: {Username}", id, user.Username);
             return true;
         }
 

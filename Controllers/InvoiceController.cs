@@ -37,7 +37,6 @@ namespace QuanLyKhachSan.Controllers
         }
 
         [HttpGet]
-        [Route("Detail/{id}")]
         public async Task<IActionResult> Detail(string id)
         {
             var invoice = await _invoiceService.GetByNumber(id);
@@ -46,7 +45,6 @@ namespace QuanLyKhachSan.Controllers
         }
 
         [HttpGet]
-        [Route("Print/{id}")]
         public async Task<IActionResult> Print(string id)
         {
             var invoice = await _invoiceService.GetByNumber(id);
@@ -63,12 +61,7 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var invoice = await _invoiceService.ConfirmPayment(id, PaymentMethod.Transfer, userId);
 
-                var booking = invoice.Booking;
-                if (booking != null)
-                {
-                    var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(TimeOnly.MinValue);
-                    await _emailService.SendCheckInReadyEmail(invoice, checkInTime);
-                }
+                await SendCheckInEmailForInvoice(invoice);
 
                 TempData["Success"] = "Đã đánh dấu hóa đơn là đã thanh toán";
             }
@@ -88,12 +81,7 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var invoice = await _invoiceService.ConfirmPayment(id, model.PaymentMethod, userId);
 
-                var booking = invoice.Booking;
-                if (booking != null)
-                {
-                    var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(TimeOnly.MinValue);
-                    await _emailService.SendCheckInReadyEmail(invoice, checkInTime);
-                }
+                await SendCheckInEmailForInvoice(invoice);
 
                 TempData["Success"] = "Xác nhận thanh toán thành công";
             }
@@ -123,12 +111,7 @@ namespace QuanLyKhachSan.Controllers
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var invoice = await _invoiceService.ConfirmVietQR(id, reference, userId);
 
-                var booking = invoice.Booking;
-                if (booking != null)
-                {
-                    var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(TimeOnly.MinValue);
-                    await _emailService.SendCheckInReadyEmail(invoice, checkInTime);
-                }
+                await SendCheckInEmailForInvoice(invoice);
 
                 TempData["Success"] = "Xác nhận thanh toán VietQR thành công";
             }
@@ -180,12 +163,7 @@ namespace QuanLyKhachSan.Controllers
                         : 1;
                     await _invoiceService.ConfirmMoMo(result.InvoiceNumber!, "", userId);
 
-                    var booking = invoice.Booking;
-                    if (booking != null)
-                    {
-                        var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(TimeOnly.MinValue);
-                        await _emailService.SendCheckInReadyEmail(invoice, checkInTime);
-                    }
+                    await SendCheckInEmailForInvoice(invoice);
                 }
 
                 TempData["Success"] = result.Message;
@@ -219,8 +197,16 @@ namespace QuanLyKhachSan.Controllers
             var booking = invoice.Booking;
             if (booking != null)
             {
-                var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(TimeOnly.MinValue);
+                var checkInTime = booking.ActualCheckIn ?? booking.CheckInDate.ToDateTime(new TimeOnly(14, 0));
                 await _emailService.SendCheckInReadyEmail(invoice, checkInTime);
+            }
+            try
+            {
+                await _emailService.SendPaymentConfirmationEmail(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email xác nhận thanh toán");
             }
         }
     }

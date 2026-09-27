@@ -34,15 +34,25 @@ namespace QuanLyKhachSan.BackgroundServices
                 {
                     using var scope = _serviceProvider.CreateScope();
                     var sePayService = scope.ServiceProvider.GetRequiredService<SePayService>();
-
                     await sePayService.ProcessPendingInvoices();
+                }
+                catch (OperationCanceledException)
+                {
+                    break; // Graceful shutdown — not an error
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Lỗi khi chạy SePay polling");
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break; // Graceful shutdown from Task.Delay — expected, not an error
+                }
             }
 
             _logger.LogInformation("SePay Polling Service stopped.");

@@ -6,6 +6,7 @@ out/
 
 ## Logs
 logs/
+*.log
 
 ## Sensitive config
 # appsettings.json (Uncomment if you want to include it, or mount it)
@@ -16,8 +17,15 @@ logs/
 .env.*
 !.env.example
 
-## Test files
+## Git & Repo
+.git/
+.gitignore
+
+## Test & Credential files
 test_accounts.txt
+credentials.generated.txt
+.ruff_cache/
+gen_erd.py
 
 ## OS
 .DS_Store

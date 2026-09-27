@@ -8,215 +8,277 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng nhập Nhân Viên - Sun Hotel</title>
+    <title>Đăng nhập Hệ Thống Quản Trị - Sun Hotel</title>
     <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/lib/bootstrap-icons/bootstrap-icons.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-        * {
-            font-family: 'Inter', sans-serif;
+        :root {
+            --sun-navy: #0B192C;
+            --sun-navy-deep: #060E18;
+            --sun-gold: #D4AF37;
+            --sun-gold-hover: #E5C358;
+            --sun-gold-light: #F7E7B4;
+            --sun-border: #E2E8F0;
         }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            box-sizing: border-box;
+        }
+
         body {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #0F2540 0%, #1A3C5E 40%, #2E8B8B 100%);
+            background: linear-gradient(135deg, #060E18 0%, #0B192C 50%, #152238 100%);
+            padding: 1.5rem 1rem;
             position: relative;
-            overflow: hidden;
+            color: #1E293B;
         }
+
+        /* Subtle luxury geometric grid watermark */
         body::before {
             content: '';
             position: absolute;
-            top: -20%;
-            right: -15%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%);
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(rgba(212, 175, 55, 0.04) 1px, transparent 1px);
+            background-size: 28px 28px;
+            pointer-events: none;
         }
-        body::after {
-            content: '';
-            position: absolute;
-            bottom: -20%;
-            left: -10%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(46,139,139,0.12) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .login-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2.5rem;
+
+        .auth-container {
             width: 100%;
-            max-width: 440px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 480px;
             position: relative;
-            z-index: 2;
+            z-index: 10;
         }
-        .sun-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #D4AF37, #F0D060);
+
+        .auth-card {
+            background: #FFFFFF;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.2);
+            overflow: hidden;
+        }
+
+        .auth-card-header {
+            background: linear-gradient(180deg, #0B192C 0%, #132238 100%);
+            padding: 2.25rem 2rem 1.75rem;
+            text-align: center;
+            color: #FFFFFF;
+            position: relative;
+            border-bottom: 2px solid var(--sun-gold);
+        }
+
+        .auth-brand-emblem {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 1rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #D4AF37, #F5D77F);
+            color: var(--sun-navy);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: #1A3C5E;
-            margin: 0 auto 1rem;
+            font-size: 1.75rem;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
         }
-        .login-title {
+
+        .auth-hotel-name {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
-            font-size: 1.5rem;
-            color: #0F2540;
-            text-align: center;
-            margin-bottom: 0.25rem;
+            font-size: 1.65rem;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.2rem;
+            color: #FFFFFF;
         }
-        .login-subtitle {
-            text-align: center;
-            color: #6b7280;
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.5;
-        }
-        .role-cta {
-            background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
-            border: 1px solid rgba(212,175,55,0.25);
-            border-radius: 10px;
-            padding: 0.6rem 1rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        .role-cta p {
-            color: #1A3C5E;
-            font-size: 0.82rem;
+
+        .auth-hotel-subtitle {
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--sun-gold);
             font-weight: 600;
             margin: 0;
         }
+
+        .auth-card-body {
+            padding: 2rem 2.25rem;
+        }
+
+
+
         .form-label {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: #1A3C5E;
+            color: #334155;
+            margin-bottom: 0.4rem;
         }
-        .form-control, .form-select {
-            border: 1px solid #e0d8cc;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 0.9rem;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #D4AF37;
-            box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #D4AF37, #F0D060);
-            color: #1A3C5E;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            padding: 12px;
-            width: 100%;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(212,175,55,0.35);
-            color: #1A3C5E;
-        }
-        .input-group-text {
-            background: #F5F0E8;
-            border: 1px solid #e0d8cc;
-            color: #D4AF37;
-            border-radius: 10px 0 0 10px;
-        }
-        .input-group .form-control {
-            border-radius: 0 10px 10px 0;
-        }
-        .input-group .form-select {
-            border-radius: 0 10px 10px 0;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 1.25rem;
-        }
-        .back-link a {
-            color: #6b7280;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .back-link a:hover {
-            color: #D4AF37;
-        }
-        .role-badge {
-            display: inline-flex;
+
+        .input-group-custom {
+            position: relative;
+            display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 0.5rem;
+        }
+
+        .input-icon-lead {
+            position: absolute;
+            left: 14px;
+            color: #94A3B8;
+            font-size: 1rem;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 10px 42px 10px 40px;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #0F172A;
+            background: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: var(--sun-gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #94A3B8;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .password-toggle-btn:hover {
+            color: #0F172A;
+        }
+
+        .btn-submit-login {
+            background: linear-gradient(135deg, #0B192C 0%, #152238 100%);
+            border: 1px solid var(--sun-gold);
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(11, 25, 44, 0.25);
+        }
+
+        .btn-submit-login:hover {
+            background: linear-gradient(135deg, #152238 0%, #203354 100%);
+            color: var(--sun-gold-light);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(11, 25, 44, 0.35);
+        }
+
+        .back-home-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .back-home-link a {
+            color: #94A3B8;
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .back-home-link a:hover {
+            color: #FFFFFF;
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <div class="sun-icon">
-            <i class="bi bi-sun-fill"></i>
-        </div>
-        <h1 class="login-title">Sun Hotel</h1>
-        <p class="login-subtitle">Trang Đăng Nhập Nhân Viên Khách Sạn</p>
-
-        <div class="role-cta">
-            <p>
-                <i class="bi bi-person-badge me-1"></i>
-                Bạn là Nhân Viên Khách Sạn?
-            </p>
-        </div>
-
-        @if (TempData["Error"] != null)
-        {
-            <div class="alert alert-danger py-2 px-3" style="font-size: 0.85rem; border-radius: 10px;">
-                <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
-            </div>
-        }
-
-        <form asp-controller="Auth" asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3" style="font-size: 0.85rem;"></div>
-
-            <div class="mb-3">
-                <label asp-for="Username" class="form-label"></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input asp-for="Username" class="form-control" placeholder="Nhập tên đăng nhập" autocomplete="username" />
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-card-header">
+                <div class="auth-brand-emblem">
+                    <i class="bi bi-sun-fill"></i>
                 </div>
-                <span asp-validation-for="Username" class="text-danger" style="font-size: 0.8rem;"></span>
+                <h1 class="auth-hotel-name">Sun Hotel & Resort</h1>
+                <p class="auth-hotel-subtitle">Cổng Đăng Nhập Vận Hành Khách Sạn (PMS)</p>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input asp-for="Password" class="form-control" placeholder="Nhập mật khẩu" autocomplete="current-password" />
-                </div>
-                <span asp-validation-for="Password" class="text-danger" style="font-size: 0.8rem;"></span>
+            <!-- Body -->
+            <div class="auth-card-body">
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger py-2 px-3 mb-3 d-flex align-items-center gap-2" style="font-size: 0.85rem; border-radius: 8px;">
+                        <i class="bi bi-exclamation-octagon-fill text-danger fs-6"></i>
+                        <div>@TempData["Error"]</div>
+                    </div>
+                }
+
+                <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" id="loginForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" style="font-size: 0.84rem;"></div>
+
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label">Tên đăng nhập</label>
+                        <div class="input-group-custom">
+                            <i class="bi bi-person input-icon-lead"></i>
+                            <input asp-for="Username" id="usernameInput" class="form-control-custom" placeholder="Nhập tên tài khoản (vd: admin, reception1)" autocomplete="username" />
+                        </div>
+                        <span asp-validation-for="Username" class="text-danger" style="font-size: 0.78rem;"></span>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">Mật khẩu</label>
+                        <div class="input-group-custom">
+                            <i class="bi bi-lock input-icon-lead"></i>
+                            <input asp-for="Password" id="passwordInput" type="password" class="form-control-custom" placeholder="Nhập mật khẩu" autocomplete="current-password" />
+                            <button type="button" class="password-toggle-btn" id="togglePasswordBtn" title="Hiện/ẩn mật khẩu">
+                                <i class="bi bi-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger" style="font-size: 0.78rem;"></span>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="form-check m-0">
+                            <input asp-for="RememberMe" class="form-check-input" id="rememberMeCheck" style="border-color: #CBD5E1; cursor: pointer;" />
+                            <label asp-for="RememberMe" class="form-check-label" for="rememberMeCheck" style="font-size: 0.82rem; color: #64748B; cursor: pointer;">
+                                Duy trì đăng nhập (24h)
+                            </label>
+                        </div>
+                        <span class="text-muted" style="font-size: 0.75rem;">Múi giờ GMT+7</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-submit-login">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập hệ thống
+                    </button>
+                </form>
             </div>
+        </div>
 
-            <div class="mb-3 form-check">
-                <input asp-for="RememberMe" class="form-check-input" style="border-color: #D4AF37;" />
-                <label asp-for="RememberMe" class="form-check-label" style="font-size: 0.85rem; color: #6b7280;">Ghi nhớ đăng nhập</label>
-            </div>
-
-            <button type="submit" class="btn btn-login">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
-            </button>
-        </form>
-
-        <div class="back-link">
+        <div class="back-home-link">
             <a asp-controller="Home" asp-action="Index">
-                <i class="bi bi-arrow-left me-1"></i> Quay lại trang chủ
+                <i class="bi bi-arrow-left me-1"></i> Quay về cổng website khách hàng Sun Hotel
             </a>
         </div>
     </div>
@@ -225,5 +287,20 @@
     <script src="/lib/jquery/dist/jquery.min.js"></script>
     <script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+
+        // Toggle Password Visibility
+        const toggleBtn = document.getElementById('togglePasswordBtn');
+        const passInput = document.getElementById('passwordInput');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (toggleBtn && passInput && toggleIcon) {
+            toggleBtn.addEventListener('click', function () {
+                const isPassword = passInput.getAttribute('type') === 'password';
+                passInput.setAttribute('type', isPassword ? 'text' : 'password');
+                toggleIcon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+            });
+        }
+    </script>
 </body>
 </html>

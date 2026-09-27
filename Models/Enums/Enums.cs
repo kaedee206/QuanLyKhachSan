@@ -21,7 +21,10 @@ namespace QuanLyKhachSan.Models.Enums
         Manager = 2,
         Receptionist = 3,
         Housekeeping = 4,
-        Maintenance = 5
+        Maintenance = 5,
+        Kitchen = 6,
+        Bar = 7,
+        Inventory = 8
     }
 
     /// <summary>
@@ -48,7 +51,10 @@ namespace QuanLyKhachSan.Models.Enums
         Transport = 3,
         Extra = 4,
         VietQR = 5,
-        MoMo = 6
+        MoMo = 6,
+        Food = 7,
+        Beverage = 8,
+        Dining = 9
     }
 
     /// <summary>
@@ -106,7 +112,9 @@ namespace QuanLyKhachSan.Models.Enums
         Maintenance = 0,
         Housekeeping = 1,
         Service = 2,
-        Other = 3
+        Other = 3,
+        Kitchen = 4,
+        Bar = 5
     }
 
     /// <summary>

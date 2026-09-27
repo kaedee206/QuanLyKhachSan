@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuanLyKhachSan.Models.Enums;
 using QuanLyKhachSan.Models.ViewModels;
 using QuanLyKhachSan.Services;
 using System.Security.Claims;
@@ -18,9 +19,28 @@ namespace QuanLyKhachSan.Controllers
         [HttpGet]
         public async Task<IActionResult> Listing(RoomSearchViewModel search)
         {
-            var rooms = await _roomService.FindAvailableRooms(search);
-            ViewBag.RoomTypes = await _roomService.GetAllRoomTypes();
+            var searchWithoutType = new RoomSearchViewModel
+            {
+                CheckInDate = search.CheckInDate,
+                CheckOutDate = search.CheckOutDate,
+                NumGuests = search.NumGuests
+            };
+            var allMatchingRooms = await _roomService.FindAvailableRooms(searchWithoutType);
+            var roomTypes = await _roomService.GetAllRoomTypes();
+
+            var rooms = search.RoomTypeId.HasValue
+                ? allMatchingRooms.Where(r => r.RoomTypeId == search.RoomTypeId.Value).ToList()
+                : allMatchingRooms;
+
+            ViewBag.RoomTypes = roomTypes;
             ViewBag.Search = search;
+            ViewBag.AvailableByType = allMatchingRooms
+                .Where(r => r.Status == RoomStatus.Available)
+                .GroupBy(r => r.RoomTypeId)
+                .ToDictionary(g => g.Key, g => g.Count());
+            ViewBag.TotalAvailableAll = allMatchingRooms.Count(r => r.Status == RoomStatus.Available);
+            ViewBag.TotalRoomsAll = allMatchingRooms.Count;
+
             return View(rooms);
         }
 
@@ -67,25 +87,67 @@ namespace QuanLyKhachSan.Controllers
             return RedirectToAction("Index");
         }
 
-        [Authorize(Roles = "Admin,Housekeeping")]
+        [Authorize(Roles = "Admin,Manager,Housekeeping,Receptionist")]
         [HttpGet]
         public async Task<IActionResult> Cleaning()
         {
             var rooms = await _roomService.GetAllRooms();
-            var cleaningRooms = rooms.Where(r =>
-                r.Status == Models.Enums.RoomStatus.Cleaning ||
-                r.Status == Models.Enums.RoomStatus.Available).ToList();
+            var cleaningRooms = rooms.Where(r => r.Status == Models.Enums.RoomStatus.Cleaning).ToList();
             return View(cleaningRooms);
         }
 
-        [Authorize(Roles = "Admin,Housekeeping")]
+        [Authorize(Roles = "Admin,Manager,Housekeeping,Receptionist")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkCleaned(int id, [FromQuery] string? returnUrl = null)
+        {
+            return await ProcessMarkCleaned(id, returnUrl);
+        }
+
+        [Authorize(Roles = "Admin,Manager,Housekeeping,Receptionist")]
+        [HttpGet]
+        [ActionName("MarkCleaned")]
+        public async Task<IActionResult> MarkCleanedGet(int id, [FromQuery] string? returnUrl = null)
+        {
+            return await ProcessMarkCleaned(id, returnUrl);
+        }
+
+        private async Task<IActionResult> ProcessMarkCleaned(int id, string? returnUrl = null)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                int userId = int.TryParse(userIdClaim, out var uid) ? uid : 1;
+                var room = await _roomService.UpdateCleaningStatus(id, RoomStatus.Available, userId);
+                TempData["Success"] = $"Phòng {room.RoomNumber} đã được dọn sạch và chuyển sang trạng thái Sẵn sàng đón khách (Available).";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            var referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer) && (referer.Contains("/Room") || referer.Contains("/Report") || referer.Contains("/Admin")))
+            {
+                return Redirect(referer);
+            }
+
+            return RedirectToAction("Cleaning");
+        }
+
+        [Authorize(Roles = "Admin,Manager,Housekeeping,Receptionist")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateCleaning(int id, Models.Enums.RoomStatus status)
         {
             try
             {
-                var userId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)!);
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 await _roomService.UpdateCleaningStatus(id, status, userId);
                 TempData["Success"] = "Cập nhật trạng thái dọn phòng thành công";
             }

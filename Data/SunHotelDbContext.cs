@@ -103,6 +103,7 @@ namespace QuanLyKhachSan.Data
                 entity.HasOne(e => e.Creator)
                       .WithMany(u => u.Invoices)
                       .HasForeignKey(e => e.CreatedById)
+                      .IsRequired(false)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 

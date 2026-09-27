@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- Tối ưu hóa MSBuild -->
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <BuildInParallel>true</BuildInParallel>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+    <TieredCompilation>true</TieredCompilation>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+  </PropertyGroup>
+</Project>

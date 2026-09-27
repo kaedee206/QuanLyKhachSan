@@ -138,7 +138,7 @@ namespace QuanLyKhachSan.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Column("created_by")]
-        public int CreatedById { get; set; }
+        public int? CreatedById { get; set; }
 
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
@@ -148,6 +148,6 @@ namespace QuanLyKhachSan.Models.Entities
         public Booking Booking { get; set; } = null!;
 
         [ForeignKey("CreatedById")]
-        public User Creator { get; set; } = null!;
+        public User? Creator { get; set; }
     }
 }
