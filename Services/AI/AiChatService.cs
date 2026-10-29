@@ -212,12 +212,26 @@ namespace QuanLyKhachSan.Services.AI
             // 3. TỔNG HỢP TOÀN BỘ NGỮ CẢNH & THÔNG TIN TỪ TOÀN BỘ LỊCH SỬ CHAT CỦA PHIÊN (MULTI-TURN CHAT SYNTHESIS)
             SynthesizeContextFromHistory(session, functionResult);
 
-            // 4. Tra cứu booking nếu người dùng nhắc đến mã đặt phòng
+            // 4. Tra cứu booking nếu người dùng nhắc đến mã đặt phòng (Chỉ nhận mã có tiền tố BK hoặc có từ khóa mã/code rõ ràng, tránh bắt nhầm từ như 'available')
             AiFunctionCallResult? bookingLookupResult = null;
-            var bookingMatch = Regex.Match(userMsg, @"(BK\d{6,12}|BK-[A-Za-z0-9]+|[A-Za-z0-9]{8,12})", RegexOptions.IgnoreCase);
-            if (bookingMatch.Success && !userMsg.ToLowerInvariant().Contains("đặt phòng"))
+            string bookingCode = "";
+            var bkPrefixMatch = Regex.Match(userMsg, @"\b(BK-?[A-Za-z0-9]{4,16})\b", RegexOptions.IgnoreCase);
+            if (bkPrefixMatch.Success)
             {
-                bookingLookupResult = await _toolExecutor.ExecuteToolAsync("lookup_booking", new { bookingCode = bookingMatch.Value }, role, session.UserId);
+                bookingCode = bkPrefixMatch.Value;
+            }
+            else
+            {
+                var explicitCodeMatch = Regex.Match(userMsg, @"(?:mã\s*(?:đặt\s*phòng|booking)?|booking\s*code|code)\s*[:#]?\s*([A-Za-z0-9\-]{4,16})\b", RegexOptions.IgnoreCase);
+                if (explicitCodeMatch.Success)
+                {
+                    bookingCode = explicitCodeMatch.Groups[1].Value;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(bookingCode) && !userMsg.ToLowerInvariant().Contains("đặt phòng") && !userMsg.ToLowerInvariant().Contains("book"))
+            {
+                bookingLookupResult = await _toolExecutor.ExecuteToolAsync("lookup_booking", new { bookingCode }, role, session.UserId);
             }
 
             // 5. Xây dựng System Prompt kết hợp dữ liệu Database thực tế, Doanh thu và Bộ nhớ thông tin đã tổng hợp
@@ -264,15 +278,32 @@ namespace QuanLyKhachSan.Services.AI
                                 session.BookingDraft.LastCreatedBookingCode = b.BookingCode;
                                 functionResult = createBookingResult;
 
-                                string confirmationCard = $"\n\n🎉 **XÁC NHẬN ĐẶT PHÒNG THÀNH CÔNG!**\n" +
-                                                          $"• **Mã đặt phòng:** `{b.BookingCode}`\n" +
-                                                          $"• **Hạng phòng:** {b.RoomTypeName}\n" +
-                                                          $"• **Khách hàng:** {b.GuestName} - {b.Phone}\n" +
-                                                          $"• **Thời gian lưu trú:** {b.CheckInDate} đến {b.CheckOutDate} ({b.Nights} đêm)\n" +
-                                                          $"• **Số khách:** {b.NumGuests} khách\n" +
-                                                          $"• **Tổng thanh toán:** {((decimal)b.TotalAmount):N0}₫\n" +
-                                                          $"• **Trạng thái:** Chờ thanh toán / Xác nhận tại quầy\n\n" +
-                                                          $"👉 Quý khách có thể bấm **Thanh toán ngay** bên dưới hoặc thanh toán tại quầy lễ tân khi nhận phòng ạ!";
+                                bool isForeignGuest = IsEnglishOrForeign(userMsg, session.Messages);
+                                string confirmationCard;
+                                if (isForeignGuest)
+                                {
+                                    confirmationCard = $"\n\n🎉 **BOOKING CONFIRMED SUCCESSFULLY!**\n" +
+                                                       $"• **Booking Code:** `{b.BookingCode}`\n" +
+                                                       $"• **Room Type:** {b.RoomTypeName}\n" +
+                                                       $"• **Guest:** {b.GuestName} ({b.Phone})\n" +
+                                                       $"• **Stay Duration:** {b.CheckInDate} to {b.CheckOutDate} ({b.Nights} night{(b.Nights > 1 ? "s" : "")})\n" +
+                                                       $"• **Guests:** {b.NumGuests} guest{(b.NumGuests > 1 ? "s" : "")}\n" +
+                                                       $"• **Total Amount:** {((decimal)b.TotalAmount):N0} VND (~${Math.Round(((decimal)b.TotalAmount) / 25000, 1)} USD)\n" +
+                                                       $"• **Status:** Pending payment / Pay upon arrival\n\n" +
+                                                       $"👉 You can click **Pay Online** below or settle payment directly at the reception desk upon check-in. We look forward to welcoming you to Sun Hotel!";
+                                }
+                                else
+                                {
+                                    confirmationCard = $"\n\n🎉 **XÁC NHẬN ĐẶT PHÒNG THÀNH CÔNG!**\n" +
+                                                       $"• **Mã đặt phòng:** `{b.BookingCode}`\n" +
+                                                       $"• **Hạng phòng:** {b.RoomTypeName}\n" +
+                                                       $"• **Khách hàng:** {b.GuestName} - {b.Phone}\n" +
+                                                       $"• **Thời gian lưu trú:** {b.CheckInDate} đến {b.CheckOutDate} ({b.Nights} đêm)\n" +
+                                                       $"• **Số khách:** {b.NumGuests} khách\n" +
+                                                       $"• **Tổng thanh toán:** {((decimal)b.TotalAmount):N0}₫\n" +
+                                                       $"• **Trạng thái:** Chờ thanh toán / Xác nhận tại quầy\n\n" +
+                                                       $"👉 Quý khách có thể bấm **Thanh toán ngay** bên dưới hoặc thanh toán tại quầy lễ tân khi nhận phòng ạ!";
+                                }
 
                                 reply = reply.Replace(actionMatch.Value, confirmationCard);
                             }
@@ -292,7 +323,7 @@ namespace QuanLyKhachSan.Services.AI
             // 6. Nếu không gọi được Gemini (chưa có key, lỗi mạng, lỗi model), sử dụng Tiếp tân ảo dự phòng thông minh
             if (string.IsNullOrWhiteSpace(reply))
             {
-                reply = await GenerateConversationalFallbackResponseAsync(userMsg, session, functionResult, bookingLookupResult, bookingMatch.Value, role, metricsResult);
+                reply = await GenerateConversationalFallbackResponseAsync(userMsg, session, functionResult, bookingLookupResult, bookingCode, role, metricsResult);
             }
 
             // 7. Bổ sung các Quick Actions tiện ích theo vai trò (Admin/Manager hoặc Guest)
@@ -310,9 +341,15 @@ namespace QuanLyKhachSan.Services.AI
             };
         }
 
-        // Danh sách các model Gemini 3 chính thức từ Google AI Studio (ai.google.dev/gemini-api/docs/models#gemini-3-stable)
-        private static readonly string[] Gemini3CandidateModels = new[]
+        // Danh sách các model Gemini chính thức & dự phòng từ Google AI Studio (ưu tiên các model chuẩn, ổn định)
+        private static readonly string[] GeminiCandidateModels = new[]
         {
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash-lite-preview-02-05",
+            "gemini-1.5-pro",
             "gemini-3.8-flash",
             "gemini-3.5-flash-lite",
             "gemini-3.7-flash",
@@ -336,12 +373,12 @@ namespace QuanLyKhachSan.Services.AI
             var modelsToTry = new List<string>();
             var primaryModel = !string.IsNullOrWhiteSpace(configuredModel) 
                 ? configuredModel.Trim() 
-                : "gemini-3.8-flash";
+                : "gemini-2.5-flash";
             
             modelsToTry.Add(primaryModel);
 
-            // Bổ sung các model dự phòng từ danh sách Gemini 3 chính thức
-            foreach (var candidate in Gemini3CandidateModels)
+            // Bổ sung các model dự phòng từ danh sách Gemini chính thức
+            foreach (var candidate in GeminiCandidateModels)
             {
                 if (!modelsToTry.Contains(candidate, StringComparer.OrdinalIgnoreCase))
                 {
@@ -504,6 +541,46 @@ namespace QuanLyKhachSan.Services.AI
             return null;
         }
 
+        public static bool IsEnglishOrForeign(string? text, List<AiChatMessage>? history)
+        {
+            if (string.IsNullOrWhiteSpace(text)) text = string.Empty;
+
+            // Kiểm tra dấu tiếng Việt đặc trưng
+            bool hasVietnameseAccents = Regex.IsMatch(text, @"[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]", RegexOptions.IgnoreCase);
+            if (hasVietnameseAccents) return false;
+
+            // Ký tự các ngôn ngữ Đông Á / Trung / Nhật / Hàn / Nga / Ả Rập / Thái
+            if (Regex.IsMatch(text, @"[\p{IsCJKUnifiedIdeographs}\p{IsHiragana}\p{IsKatakana}\p{IsHangulSyllables}\p{IsCyrillic}\p{IsArabic}\p{IsThai}]"))
+            {
+                return true;
+            }
+
+            string lower = text.ToLowerInvariant().Trim();
+
+            // Các từ khóa tiếng Anh đặt phòng và giao tiếp khách sạn điển hình
+            bool hasEnglishKeywords = Regex.IsMatch(lower, @"\b(hello|hi|hey|good\s+(morning|afternoon|evening)|book|booking|room|rooms|hotel|available|availability|price|pricing|rate|rates|cost|night|nights|check-in|checkin|check-out|checkout|stay|staying|guest|guests|people|person|persons|adult|adults|child|children|pax|today|tomorrow|tonight|deluxe|suite|standard|superior|president|view|ocean|beach|breakfast|buffet|pool|swimming|wifi|airport|shuttle|transfer|reservation|reserve|confirm|confirmation|yes|please|cancel|lookup|code|my\s+name|i\s+am|i'm|want|need|looking|how\s+much|where|can\s+i|would\s+like|cash|card|credit|pay|payment|arrival)\b", RegexOptions.IgnoreCase);
+            if (hasEnglishKeywords) return true;
+
+            // Nếu câu ngắn và không có dấu tiếng Việt, kiểm tra các tin nhắn trước đó của khách trong phiên
+            if (history != null && history.Count > 0)
+            {
+                var priorUserMessages = history.Where(m => m.Role.Equals("user", StringComparison.OrdinalIgnoreCase)).TakeLast(4);
+                foreach (var msg in priorUserMessages)
+                {
+                    if (Regex.IsMatch(msg.Content, @"[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]", RegexOptions.IgnoreCase))
+                    {
+                        return false;
+                    }
+                    if (Regex.IsMatch(msg.Content.ToLowerInvariant(), @"\b(hello|hi|book|room|available|price|night|stay|guest|hotel|check-in|checkout|confirm)\b"))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private void SynthesizeContextFromHistory(AiChatSession session, AiFunctionCallResult? roomResult)
         {
             var draft = session.BookingDraft;
@@ -518,12 +595,21 @@ namespace QuanLyKhachSan.Services.AI
                 string text = msg.Content.Trim();
                 string lower = text.ToLowerInvariant();
 
-                // 1. Số điện thoại (Bắt số 10-11 chữ số di động VN)
+                // 1. Số điện thoại (Hỗ trợ cả di động Việt Nam và số điện thoại Quốc tế +XXX)
                 var phoneMatch = Regex.Match(text, @"(?:\+84|0)(3[2-9]|5[6|8|9]|7[0|6-9]|8[1-5|8|9]|9[0-4|6-9])\d{7}|0\d{9}");
                 if (phoneMatch.Success)
                 {
                     draft.Phone = phoneMatch.Value;
                     session.SynthesizedFacts["phone"] = draft.Phone;
+                }
+                else
+                {
+                    var intlPhone = Regex.Match(text, @"(?:\+|00)[1-9]\d{0,3}[\s.-]?\d{2,4}[\s.-]?\d{3,5}[\s.-]?\d{3,5}");
+                    if (intlPhone.Success)
+                    {
+                        draft.Phone = Regex.Replace(intlPhone.Value, @"[\s.-]", "");
+                        session.SynthesizedFacts["phone"] = draft.Phone;
+                    }
                 }
 
                 // 2. Email
@@ -534,20 +620,32 @@ namespace QuanLyKhachSan.Services.AI
                     session.SynthesizedFacts["email"] = draft.Email;
                 }
 
-                // 3. Số lượng khách
-                var guestMatch = Regex.Match(text, @"(\d+)\s*(?:người|khách|pax|chỗ|vé)", RegexOptions.IgnoreCase);
+                // 3. Số lượng khách (Hỗ trợ cả tiếng Việt và tiếng Anh: guests, people, pax, persons)
+                var guestMatch = Regex.Match(text, @"(\d+)\s*(?:người|khách|pax|chỗ|vé|guests?|people|persons?|adults?)", RegexOptions.IgnoreCase);
                 if (guestMatch.Success && int.TryParse(guestMatch.Groups[1].Value, out var g) && g > 0 && g <= 10)
                 {
                     draft.NumGuests = g;
                     session.SynthesizedFacts["guests"] = g.ToString();
                 }
-                else if (lower.Contains("hai người") || lower.Contains("2 người"))
+                else if (lower.Contains("hai người") || lower.Contains("2 người") || lower.Contains("two guests") || lower.Contains("2 guests") || lower.Contains("2 people") || lower.Contains("2 pax") || lower.Contains("double room"))
                 {
                     draft.NumGuests = 2;
+                    session.SynthesizedFacts["guests"] = "2";
                 }
-                else if (lower.Contains("một người") || lower.Contains("1 người") || lower.Contains("phòng đơn"))
+                else if (lower.Contains("một người") || lower.Contains("1 người") || lower.Contains("one guest") || lower.Contains("1 guest") || lower.Contains("1 person") || lower.Contains("single room") || lower.Contains("phòng đơn"))
                 {
                     draft.NumGuests = 1;
+                    session.SynthesizedFacts["guests"] = "1";
+                }
+                else if (lower.Contains("three guests") || lower.Contains("3 guests") || lower.Contains("3 people") || lower.Contains("ba người") || lower.Contains("3 người"))
+                {
+                    draft.NumGuests = 3;
+                    session.SynthesizedFacts["guests"] = "3";
+                }
+                else if (lower.Contains("four guests") || lower.Contains("4 guests") || lower.Contains("4 people") || lower.Contains("bốn người") || lower.Contains("4 người"))
+                {
+                    draft.NumGuests = 4;
+                    session.SynthesizedFacts["guests"] = "4";
                 }
 
                 // 4. Hạng phòng theo CSDL & Từ đồng nghĩa
@@ -563,6 +661,7 @@ namespace QuanLyKhachSan.Services.AI
                             (name.Contains("suite") && (lower.Contains("suite") || lower.Contains("vip") || lower.Contains("hạng sang") || lower.Contains("cao cấp"))) ||
                             (name.Contains("standard") && (lower.Contains("standard") || lower.Contains("tiêu chuẩn") || lower.Contains("phòng đơn"))) ||
                             (name.Contains("family") && (lower.Contains("family") || lower.Contains("gia đình"))) ||
+                            (name.Contains("president") && lower.Contains("president")) ||
                             (name.Contains("executive") && lower.Contains("executive")))
                         {
                             draft.RoomTypeId = rt.RoomTypeId;
@@ -573,37 +672,49 @@ namespace QuanLyKhachSan.Services.AI
                     }
                 }
 
-                // 5. Ngày nhận phòng & Ngày trả phòng
-                if (lower.Contains("hôm nay") || lower.Contains("tối nay"))
+                // 5. Ngày nhận phòng & Ngày trả phòng (Tiếng Việt & Tiếng Anh: today, tomorrow, nights)
+                if (lower.Contains("hôm nay") || lower.Contains("tối nay") || lower.Contains("today") || lower.Contains("tonight"))
                 {
                     draft.CheckInDate = today;
                     if (!draft.CheckOutDate.HasValue || draft.CheckOutDate <= draft.CheckInDate)
                         draft.CheckOutDate = today.AddDays(1);
                 }
-                else if (lower.Contains("ngày mai") || lower.Contains("mai"))
+                else if (lower.Contains("ngày mai") || lower.Contains("mai") || lower.Contains("tomorrow"))
                 {
                     draft.CheckInDate = today.AddDays(1);
                     if (!draft.CheckOutDate.HasValue || draft.CheckOutDate <= draft.CheckInDate)
                         draft.CheckOutDate = today.AddDays(2);
                 }
-                else if (lower.Contains("ngày kia"))
+                else if (lower.Contains("ngày kia") || lower.Contains("day after tomorrow"))
                 {
                     draft.CheckInDate = today.AddDays(2);
                     if (!draft.CheckOutDate.HasValue || draft.CheckOutDate <= draft.CheckInDate)
                         draft.CheckOutDate = today.AddDays(3);
                 }
 
-                // Số đêm: ví dụ "2 đêm", "3 đêm"
-                var nightsMatch = Regex.Match(text, @"(\d+)\s*đêm", RegexOptions.IgnoreCase);
+                // Số đêm: ví dụ "2 đêm", "3 đêm", "2 nights", "3 nights"
+                var nightsMatch = Regex.Match(text, @"(\d+)\s*(?:đêm|nights?|night)", RegexOptions.IgnoreCase);
                 if (nightsMatch.Success && int.TryParse(nightsMatch.Groups[1].Value, out var n) && n > 0)
                 {
                     var cin = draft.CheckInDate ?? today;
                     draft.CheckInDate = cin;
                     draft.CheckOutDate = cin.AddDays(n);
                 }
+                else if (lower.Contains("one night") || lower.Contains("1 night"))
+                {
+                    var cin = draft.CheckInDate ?? today;
+                    draft.CheckInDate = cin;
+                    draft.CheckOutDate = cin.AddDays(1);
+                }
+                else if (lower.Contains("two nights") || lower.Contains("2 nights"))
+                {
+                    var cin = draft.CheckInDate ?? today;
+                    draft.CheckInDate = cin;
+                    draft.CheckOutDate = cin.AddDays(2);
+                }
 
-                // Dạng khoảng ngày cụ thể: 27/09 đến 29/09 hoặc 27/9 - 29/9
-                var dateRangeMatch = Regex.Match(text, @"(?:từ\s*)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\s*(?:đến|-|tới)\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?", RegexOptions.IgnoreCase);
+                // Dạng khoảng ngày cụ thể: 27/09 đến 29/09, 27/9 - 29/9 hoặc from 27/9 to 29/9
+                var dateRangeMatch = Regex.Match(text, @"(?:từ|from\s*)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\s*(?:đến|-|tới|to)\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?", RegexOptions.IgnoreCase);
                 if (dateRangeMatch.Success)
                 {
                     try
@@ -622,8 +733,8 @@ namespace QuanLyKhachSan.Services.AI
                     catch {}
                 }
 
-                // 6. Họ và tên người nhận phòng
-                var nameMatch = Regex.Match(text, @"(?:tên là|tôi là|mình là|tên tôi là|tên em là|khách là)\s+([A-ZÀ-Ỹa-zà-ỹ\s]{2,30})", RegexOptions.IgnoreCase);
+                // 6. Họ và tên người nhận phòng (Hỗ trợ tiếng Việt và quốc tế: My name is..., I am..., Name: ...)
+                var nameMatch = Regex.Match(text, @"(?:tên là|tôi là|mình là|tên tôi là|tên em là|khách là|my name is|i am|i'm|name is|guest name is|name:)\s+([A-ZÀ-Ỹa-zà-ỹ\s]{2,35})", RegexOptions.IgnoreCase);
                 if (nameMatch.Success)
                 {
                     draft.GuestName = nameMatch.Groups[1].Value.Trim();
@@ -631,7 +742,7 @@ namespace QuanLyKhachSan.Services.AI
                 }
                 else
                 {
-                    var prefixNameMatch = Regex.Match(text, @"(?:anh|chị|chú|bác)\s+([A-ZÀ-Ỹa-zà-ỹ]{2,20})", RegexOptions.IgnoreCase);
+                    var prefixNameMatch = Regex.Match(text, @"(?:anh|chị|chú|bác|mr\.?|ms\.?|mrs\.?)\s+([A-ZÀ-Ỹa-zà-ỹ]{2,25})", RegexOptions.IgnoreCase);
                     if (prefixNameMatch.Success && string.IsNullOrWhiteSpace(draft.GuestName))
                     {
                         string candidateName = prefixNameMatch.Groups[1].Value.Trim();
@@ -648,12 +759,13 @@ namespace QuanLyKhachSan.Services.AI
                         if (prevAssistantMsg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
                         {
                             string prevLower = prevAssistantMsg.Content.ToLowerInvariant();
-                            if (prevLower.Contains("tên") || prevLower.Contains("họ và tên") || prevLower.Contains("người nhận phòng"))
+                            if (prevLower.Contains("tên") || prevLower.Contains("name") || prevLower.Contains("họ và tên") || prevLower.Contains("người nhận phòng"))
                             {
                                 var words = text.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                                 if (words.Length >= 1 && words.Length <= 4 && 
                                     !lower.Contains("phòng") && !lower.Contains("giá") && !lower.Contains("ngày") && 
-                                    !lower.Contains("bao nhiêu") && !lower.Contains("đêm") && !lower.Contains("ok") && !lower.Contains("alo"))
+                                    !lower.Contains("bao nhiêu") && !lower.Contains("đêm") && !lower.Contains("ok") && 
+                                    !lower.Contains("room") && !lower.Contains("hotel") && !lower.Contains("book"))
                                 {
                                     draft.GuestName = text.Trim();
                                     session.SynthesizedFacts["guest_name"] = draft.GuestName;
@@ -663,17 +775,17 @@ namespace QuanLyKhachSan.Services.AI
                     }
                 }
 
-                // 7. Yêu cầu / Ghi chú đặc biệt
-                if (lower.Contains("tầng cao") || lower.Contains("view biển") || lower.Contains("view đẹp") || 
-                    lower.Contains("không hút thuốc") || lower.Contains("yên tĩnh") || lower.Contains("check-in muộn") || 
-                    lower.Contains("checkin muộn") || lower.Contains("ăn sáng"))
+                // 7. Yêu cầu / Ghi chú đặc biệt (Việt & Anh)
+                if (lower.Contains("tầng cao") || lower.Contains("high floor") || lower.Contains("view biển") || lower.Contains("ocean view") || lower.Contains("sea view") || lower.Contains("view đẹp") || 
+                    lower.Contains("không hút thuốc") || lower.Contains("non-smoking") || lower.Contains("no smoking") || lower.Contains("yên tĩnh") || lower.Contains("quiet") || lower.Contains("check-in muộn") || 
+                    lower.Contains("late check-in") || lower.Contains("late checkin") || lower.Contains("ăn sáng") || lower.Contains("breakfast"))
                 {
                     var notesList = new List<string>();
-                    if (lower.Contains("tầng cao")) notesList.Add("Tầng cao");
-                    if (lower.Contains("view biển") || lower.Contains("view đẹp")) notesList.Add("View đẹp/biển");
-                    if (lower.Contains("không hút thuốc")) notesList.Add("Phòng không hút thuốc");
-                    if (lower.Contains("yên tĩnh")) notesList.Add("Phòng yên tĩnh");
-                    if (lower.Contains("check-in muộn") || lower.Contains("checkin muộn")) notesList.Add("Check-in muộn");
+                    if (lower.Contains("tầng cao") || lower.Contains("high floor")) notesList.Add("High floor / Tầng cao");
+                    if (lower.Contains("view biển") || lower.Contains("view đẹp") || lower.Contains("ocean view") || lower.Contains("sea view")) notesList.Add("Ocean view / View biển");
+                    if (lower.Contains("không hút thuốc") || lower.Contains("non-smoking") || lower.Contains("no smoking")) notesList.Add("Non-smoking / Không hút thuốc");
+                    if (lower.Contains("yên tĩnh") || lower.Contains("quiet")) notesList.Add("Quiet room / Yên tĩnh");
+                    if (lower.Contains("check-in muộn") || lower.Contains("late check-in") || lower.Contains("late checkin")) notesList.Add("Late check-in");
                     if (notesList.Count > 0)
                     {
                         draft.Notes = string.Join(", ", notesList);
@@ -681,25 +793,26 @@ namespace QuanLyKhachSan.Services.AI
                     }
                 }
 
-                // 8. Hình thức thanh toán (Tiền mặt tại quầy / Chuyển khoản VietQR / MoMo / Thẻ)
-                if (lower.Contains("tiền mặt") || lower.Contains("tại quầy") || lower.Contains("khi nhận phòng") || lower.Contains("nhận phòng thanh toán"))
+                // 8. Hình thức thanh toán (Tiền mặt / Thẻ quốc tế / VietQR / MoMo)
+                bool isForeign = IsEnglishOrForeign(text, session.Messages);
+                if (lower.Contains("tiền mặt") || lower.Contains("tại quầy") || lower.Contains("khi nhận phòng") || lower.Contains("nhận phòng thanh toán") || lower.Contains("cash") || lower.Contains("upon arrival") || lower.Contains("at check-in") || lower.Contains("on arrival"))
                 {
-                    draft.PaymentMethod = "Tiền mặt tại quầy";
+                    draft.PaymentMethod = isForeign ? "Cash upon arrival" : "Tiền mặt tại quầy";
                     session.SynthesizedFacts["payment_method"] = draft.PaymentMethod;
                 }
-                else if (lower.Contains("chuyển khoản") || lower.Contains("vietqr") || lower.Contains("ngân hàng") || lower.Contains("bằng qr") || lower.Contains("quét qr"))
+                else if (lower.Contains("thẻ") || lower.Contains("visa") || lower.Contains("mastercard") || lower.Contains("quẹt thẻ") || lower.Contains("credit card") || lower.Contains("card"))
                 {
-                    draft.PaymentMethod = "Chuyển khoản VietQR";
+                    draft.PaymentMethod = isForeign ? "Credit Card (Visa/Mastercard)" : "Thẻ ngân hàng";
                     session.SynthesizedFacts["payment_method"] = draft.PaymentMethod;
                 }
-                else if (lower.Contains("momo") || lower.Contains("ví điện tử"))
+                else if (lower.Contains("chuyển khoản") || lower.Contains("vietqr") || lower.Contains("ngân hàng") || lower.Contains("bằng qr") || lower.Contains("quét qr") || lower.Contains("bank transfer") || lower.Contains("qr code"))
                 {
-                    draft.PaymentMethod = "Ví MoMo";
+                    draft.PaymentMethod = isForeign ? "Bank Transfer / VietQR" : "Chuyển khoản VietQR";
                     session.SynthesizedFacts["payment_method"] = draft.PaymentMethod;
                 }
-                else if (lower.Contains("thẻ") || lower.Contains("visa") || lower.Contains("mastercard") || lower.Contains("quẹt thẻ"))
+                else if (lower.Contains("momo") || lower.Contains("ví điện tử") || lower.Contains("online payment"))
                 {
-                    draft.PaymentMethod = "Thẻ ngân hàng";
+                    draft.PaymentMethod = isForeign ? "Online Payment (MoMo / E-Wallet)" : "Ví MoMo";
                     session.SynthesizedFacts["payment_method"] = draft.PaymentMethod;
                 }
             }
@@ -753,6 +866,12 @@ namespace QuanLyKhachSan.Services.AI
                 sb.AppendLine("1. QUY TẮC CỐT LÕI: Bạn là Tiếp tân ảo chuyên nghiệp của khách sạn Sun Hotel 4 sao.");
                 sb.AppendLine("   TUYỆT ĐỐI KHÔNG ĐƯỢC chỉ gửi link bắt khách tự ra ngoài web điền form! BẠN PHẢI TRỰC TIẾP TƯ VẤN, THU THẬP ĐỦ THÔNG TIN VÀ ĐẶT PHÒNG HỘ KHÁCH NGAY TRONG ĐOẠN CHAT NÀY.");
                 sb.AppendLine();
+                sb.AppendLine("=== QUY TẮC ĐA NGÔN NGỮ (CRITICAL MULTILINGUAL INSTRUCTION) ===");
+                sb.AppendLine("- TỰ ĐỘNG PHÁT HIỆN NGÔN NGỮ CỦA KHÁCH:");
+                sb.AppendLine("  + Nếu khách gửi tin nhắn bằng Tiếng Anh (hoặc bất kỳ ngôn ngữ nào khác): TOÀN BỘ câu trả lời, câu hỏi thu thập thông tin, báo giá, tóm tắt và xác nhận đặt phòng BẮT BUỘC PHẢI DÙNG CHÍNH NGÔN NGỮ ĐÓ CỦA KHÁCH!");
+                sb.AppendLine("  + Tuyệt đối KHÔNG ĐƯỢC trả lời bằng Tiếng Việt khi khách nhắn bằng Tiếng Anh hoặc tiếng nước ngoài.");
+                sb.AppendLine("  + Hãy cung cấp giá phòng bằng VNĐ kèm theo ước tính USD (~$1 USD = 25,000 VND) để khách quốc tế dễ hiểu.");
+                sb.AppendLine();
                 sb.AppendLine("=== BỘ NHỚ HỘI THOẠI & THÔNG TIN ĐÃ TỔNG HỢP TỪ ĐOẠN CHAT (BẮT BUỘC GHI NHỚ) ===");
                 sb.AppendLine("Dưới đây là bảng tổng hợp các thông tin đã thu thập được từ toàn bộ cuộc trò chuyện với khách:");
                 sb.AppendLine($"- Hạng phòng: {(draft.RoomTypeId.HasValue ? $"✅ ĐÃ CÓ: {draft.RoomTypeName} (Mã loại: {draft.RoomTypeId})" : "❌ CHƯA CÓ (Cần hỏi)")}");
@@ -771,10 +890,9 @@ namespace QuanLyKhachSan.Services.AI
                 sb.AppendLine("=== NGUYÊN TẮC BẮT BUỘC VỀ BỘ NHỚ & TỔNG HỢP THÔNG TIN (CHỐNG HỎI LẶP LẠI) ===");
                 sb.AppendLine("1. NGUYÊN TẮC TỔNG HỢP: Hãy luôn tổng hợp và ghi nhớ các thông tin có dấu ✅ ĐÃ CÓ ở trên.");
                 sb.AppendLine("   TUYỆT ĐỐI CẤM HỎI LẠI bất kỳ thông tin nào đã có dấu ✅!");
-                sb.AppendLine("2. NẾU CÒN THIẾU THÔNG TIN (dấu ❌ CHƯA CÓ): Hãy xác nhận ngắn gọn thông tin đã có và CHỈ HỎI ĐÚNG NHỮNG THÔNG TIN CÒN THIẾU (đặc biệt là Email và Hình thức thanh toán).");
-                sb.AppendLine("   (Ví dụ: 'Dạ em đã ghi nhận anh Hùng chọn phòng Deluxe từ 28/9 đến 30/9 cho 2 khách rồi ạ. Quý khách cho em xin thêm số điện thoại, email và hình thức thanh toán dự kiến (tiền mặt tại quầy hay chuyển khoản) để hoàn tất giữ phòng nhé!')");
+                sb.AppendLine("2. NẾU CÒN THIẾU THÔNG TIN (dấu ❌ CHƯA CÓ): Hãy xác nhận ngắn gọn thông tin đã có và CHỈ HỎI ĐÚNG NHỮNG THÔNG TIN CÒN THIẾU (đặc biệt là Email và Hình thức thanh toán) bằng chính ngôn ngữ của khách.");
                 sb.AppendLine("3. KHI ĐÃ ĐỦ TẤT CẢ THÔNG TIN CHÍNH (Hạng phòng, Tên, SĐT, Email, Hình thức thanh toán, Ngày đến, Ngày đi): Tóm tắt chi tiết đơn đặt phòng và đề xuất xác nhận tạo đơn ngay lập tức.");
-                sb.AppendLine("4. KHI KHÁCH ĐÃ ĐỒNG Ý / XÁC NHẬN ĐẶT (ví dụ: 'đặt đi em', 'ok', 'xác nhận', 'chốt nhé'): BẠN PHẢI XUẤT CÚ PHÁP HÀNH ĐỘNG ở cuối câu trả lời:");
+                sb.AppendLine("4. KHI KHÁCH ĐÃ ĐỒNG Ý / XÁC NHẬN ĐẶT (ví dụ: 'đặt đi em', 'ok', 'xác nhận', 'confirm', 'book now'): BẠN PHẢI XUẤT CÚ PHÁP HÀNH ĐỘNG ở cuối câu trả lời:");
                 sb.AppendLine("  [ACTION:create_booking {\"roomTypeId\": <Id>, \"guestName\": \"<Tên>\", \"phone\": \"<SĐT>\", \"email\": \"<Email>\", \"paymentMethod\": \"<HTTT>\", \"checkInDate\": \"YYYY-MM-DD\", \"checkOutDate\": \"YYYY-MM-DD\", \"numGuests\": <Số khách>, \"notes\": \"<Ghi chú>\"}]");
                 sb.AppendLine();
             }
@@ -801,9 +919,9 @@ namespace QuanLyKhachSan.Services.AI
 
                     string roomStatus = avail > 0 
                         ? $"Còn {avail} phòng trống (Số phòng: {string.Join(", ", nums.Select(n => "P." + n))})" 
-                        : "Hết phòng";
+                        : "Hết phòng / Fully booked";
 
-                    sb.AppendLine($"  + ID: {rId} | {typeName}: {roomStatus} | Giá: {price:N0}₫/đêm | Tối đa: {maxGuests} khách. Tiện ích: {desc}");
+                    sb.AppendLine($"  + ID: {rId} | {typeName}: {roomStatus} | Giá/Rate: {price:N0}₫/đêm (~${Math.Round(price / 25000, 1)} USD/night) | Tối đa: {maxGuests} khách (Max: {maxGuests} guests). Tiện ích: {desc}");
                 }
             }
 
@@ -816,7 +934,7 @@ namespace QuanLyKhachSan.Services.AI
                 sb.AppendLine($"- Tên khách hàng: {b.GuestName}");
                 sb.AppendLine($"- Hạng phòng: {b.RoomTypeName} (Phòng số: {b.RoomNumber})");
                 sb.AppendLine($"- Thời gian lưu trú: Từ {b.CheckInDate} đến {b.CheckOutDate}");
-                sb.AppendLine($"- Tổng thanh toán: {((decimal)b.TotalAmount):N0}₫");
+                sb.AppendLine($"- Tổng thanh toán: {((decimal)b.TotalAmount):N0}₫ (~${Math.Round(((decimal)b.TotalAmount) / 25000, 1)} USD)");
                 sb.AppendLine($"- Trạng thái đơn: {b.Status}");
             }
 
@@ -834,6 +952,7 @@ namespace QuanLyKhachSan.Services.AI
         {
             string lower = userMsg.ToLowerInvariant().Trim();
             var draft = session.BookingDraft;
+            bool isForeign = IsEnglishOrForeign(userMsg, session.Messages);
 
             // 0. XỬ LÝ CÂU HỎI VỀ DOANH THU, BÁO CÁO, THỐNG KÊ, CÔNG SUẤT PHÒNG DÀNH CHO ADMIN
             bool isRevenueIntent = lower.Contains("doanh thu") || 
@@ -843,6 +962,8 @@ namespace QuanLyKhachSan.Services.AI
                                    lower.Contains("công suất") || 
                                    lower.Contains("tài chính") || 
                                    lower.Contains("kinh doanh") || 
+                                   lower.Contains("revenue") ||
+                                   lower.Contains("occupancy") ||
                                    lower.Contains("doanh số");
 
             if (isRevenueIntent)
@@ -889,9 +1010,9 @@ namespace QuanLyKhachSan.Services.AI
                 }
                 else
                 {
-                    return "🔒 **Thông báo bảo mật:**\n\n" +
-                           "Dạ thông tin thống kê doanh thu, báo cáo tài chính và hiệu suất kinh doanh là dữ liệu nội bộ được bảo mật của **Sun Hotel**.\n\n" +
-                           "Quý khách vui lòng đăng nhập bằng tài khoản **Quản trị viên (Admin)** hoặc **Quản lý (Manager)** để tra cứu báo cáo này ạ!";
+                    return isForeign
+                        ? "🔒 **Security Notice:**\n\nRevenue, financial metrics, and operational performance reports are confidential internal data of **Sun Hotel**.\n\nPlease log in with an **Administrator** or **Manager** account to access this data."
+                        : "🔒 **Thông báo bảo mật:**\n\nDạ thông tin thống kê doanh thu, báo cáo tài chính và hiệu suất kinh doanh là dữ liệu nội bộ được bảo mật của **Sun Hotel**.\n\nQuý khách vui lòng đăng nhập bằng tài khoản **Quản trị viên (Admin)** hoặc **Quản lý (Manager)** để tra cứu báo cáo này ạ!";
                 }
             }
 
@@ -899,6 +1020,17 @@ namespace QuanLyKhachSan.Services.AI
             if (bookingResult != null && bookingResult.Success && bookingResult.Data != null)
             {
                 dynamic b = bookingResult.Data;
+                if (isForeign)
+                {
+                    return $"I found your reservation details at **Sun Hotel**:\n\n" +
+                           $"• **Booking Code:** `{b.BookingCode}`\n" +
+                           $"• **Guest Name:** {b.GuestName}\n" +
+                           $"• **Room Type:** {b.RoomTypeName} (Room: {b.RoomNumber})\n" +
+                           $"• **Stay Duration:** From {b.CheckInDate} to {b.CheckOutDate}\n" +
+                           $"• **Total Amount:** {((decimal)b.TotalAmount):N0} VND (~${Math.Round(((decimal)b.TotalAmount) / 25000, 1)} USD)\n" +
+                           $"• **Status:** {b.Status}\n\n" +
+                           $"Please let me know if you need any additional assistance with your stay!";
+                }
                 return $"Dạ em đã tìm thấy thông tin đơn đặt phòng của Quý khách:\n\n" +
                        $"• **Mã đặt phòng:** `{b.BookingCode}`\n" +
                        $"• **Khách hàng:** {b.GuestName}\n" +
@@ -909,14 +1041,24 @@ namespace QuanLyKhachSan.Services.AI
                        $"Nếu Quý khách cần hỗ trợ gì thêm, đừng ngần ngại nhắn em nhé!";
             }
 
-            if (!string.IsNullOrWhiteSpace(bookingCode) && !lower.Contains("đặt phòng"))
+            bool isValidBookingCodeFormat = !string.IsNullOrWhiteSpace(bookingCode) &&
+                (bookingCode.StartsWith("BK", StringComparison.OrdinalIgnoreCase) || bookingCode.Length >= 6) &&
+                !bookingCode.Equals("available", StringComparison.OrdinalIgnoreCase) &&
+                !bookingCode.Equals("reservation", StringComparison.OrdinalIgnoreCase);
+
+            if (isValidBookingCodeFormat && !lower.Contains("đặt phòng") && !lower.Contains("book"))
             {
-                return $"Dạ em không tìm thấy đơn đặt phòng với mã `{bookingCode}`. Quý khách vui lòng kiểm tra lại mã hoặc tra cứu tại **[Tra cứu booking](/Booking/Lookup)** ạ.";
+                return isForeign
+                    ? $"I could not find any reservation with booking code `{bookingCode}`. Please double-check your code or look up at **[Booking Lookup](/Booking/Lookup)**."
+                    : $"Dạ em không tìm thấy đơn đặt phòng với mã `{bookingCode}`. Quý khách vui lòng kiểm tra lại mã hoặc tra cứu tại **[Tra cứu booking](/Booking/Lookup)** ạ.";
             }
 
             // 2. Kiểm tra nếu khách xác nhận đặt phòng
-            bool isConfirming = lower.Contains("xác nhận") || lower.Contains("đồng ý") || lower.Contains("đặt luôn") || lower.Contains("đặt đi em") || lower.Contains("ok em") || lower.Contains("chốt") || lower.Contains("tạo đơn");
-            bool isBookingIntent = lower.Contains("đặt phòng") || lower.Contains("đặt giúp") || lower.Contains("tôi muốn đặt") || lower.Contains("book") || draft.RoomTypeId.HasValue || !string.IsNullOrWhiteSpace(draft.Phone) || draft.CheckInDate.HasValue || !string.IsNullOrWhiteSpace(draft.GuestName);
+            bool isConfirming = lower.Contains("xác nhận") || lower.Contains("đồng ý") || lower.Contains("đặt luôn") || lower.Contains("đặt đi em") || lower.Contains("ok em") || lower.Contains("chốt") || lower.Contains("tạo đơn") ||
+                                lower.Contains("confirm") || lower.Contains("book now") || lower.Contains("please book") || lower.Contains("proceed") || lower.Contains("yes please");
+
+            bool isBookingIntent = lower.Contains("đặt phòng") || lower.Contains("đặt giúp") || lower.Contains("tôi muốn đặt") || lower.Contains("book") || lower.Contains("reserve") || lower.Contains("reservation") ||
+                                   draft.RoomTypeId.HasValue || !string.IsNullOrWhiteSpace(draft.Phone) || draft.CheckInDate.HasValue || !string.IsNullOrWhiteSpace(draft.GuestName);
 
             if (isConfirming && draft.HasMinimumInfo)
             {
@@ -939,6 +1081,20 @@ namespace QuanLyKhachSan.Services.AI
                     dynamic b = res.Data;
                     draft.LastCreatedBookingCode = b.BookingCode;
 
+                    if (isForeign)
+                    {
+                        return $"🎉 **RESERVATION CONFIRMED SUCCESSFULLY!**\n\n" +
+                               $"I have successfully created and confirmed your reservation at **Sun Hotel**:\n\n" +
+                               $"• **Booking Code:** `{b.BookingCode}`\n" +
+                               $"• **Room Type:** {b.RoomTypeName}\n" +
+                               $"• **Guest Name:** {b.GuestName} ({b.Phone})\n" +
+                               $"• **Stay Duration:** {b.CheckInDate} to {b.CheckOutDate} ({b.Nights} night{(b.Nights > 1 ? "s" : "")})\n" +
+                               $"• **Guests:** {b.NumGuests} guest{(b.NumGuests > 1 ? "s" : "")}\n" +
+                               $"• **Total Payment:** {((decimal)b.TotalAmount):N0} VND (~${Math.Round(((decimal)b.TotalAmount) / 25000, 1)} USD)\n" +
+                               $"• **Status:** Pending payment / Pay upon check-in\n\n" +
+                               $"👉 You can click **Pay Online** below to pay immediately via QR/Card, or pay upon arrival at our front desk. We look forward to your stay!";
+                    }
+
                     return $"🎉 **ĐẶT PHÒNG THÀNH CÔNG!**\n\n" +
                            $"Dạ em đã hoàn tất việc đặt phòng và giữ chỗ cho Quý khách trên hệ thống của **Sun Hotel**:\n\n" +
                            $"• **Mã đặt phòng:** `{b.BookingCode}`\n" +
@@ -952,7 +1108,9 @@ namespace QuanLyKhachSan.Services.AI
                 }
                 else
                 {
-                    return $"Dạ em rất tiếc, đã có lỗi xảy ra khi tạo đơn đặt phòng: {res.ErrorMessage}. Quý khách vui lòng thử lại hoặc để em kiểm tra lại nhé!";
+                    return isForeign
+                        ? $"I apologize, an error occurred while processing your booking: {res.ErrorMessage}. Please try again or let me check the details for you!"
+                        : $"Dạ em rất tiếc, đã có lỗi xảy ra khi tạo đơn đặt phòng: {res.ErrorMessage}. Quý khách vui lòng thử lại hoặc để em kiểm tra lại nhé!";
                 }
             }
 
@@ -961,12 +1119,12 @@ namespace QuanLyKhachSan.Services.AI
             {
                 // Kiểm tra xem còn thiếu thông tin gì
                 var missingFields = new List<string>();
-                if (!draft.RoomTypeId.HasValue) missingFields.Add("Hạng phòng mong muốn (Standard, Deluxe, Suite...)");
-                if (!draft.CheckInDate.HasValue || !draft.CheckOutDate.HasValue) missingFields.Add("Ngày nhận phòng & Ngày trả phòng");
-                if (string.IsNullOrWhiteSpace(draft.GuestName)) missingFields.Add("Họ và tên người nhận phòng");
-                if (string.IsNullOrWhiteSpace(draft.Phone)) missingFields.Add("Số điện thoại liên hệ");
-                if (string.IsNullOrWhiteSpace(draft.Email)) missingFields.Add("Email nhận thông báo & hóa đơn xác nhận");
-                if (string.IsNullOrWhiteSpace(draft.PaymentMethod)) missingFields.Add("Hình thức thanh toán dự kiến (Tiền mặt tại quầy / Chuyển khoản VietQR / MoMo)");
+                if (!draft.RoomTypeId.HasValue) missingFields.Add(isForeign ? "Desired Room Type (Standard, Superior, Deluxe, Suite...)" : "Hạng phòng mong muốn (Standard, Superior, Deluxe, Suite...)");
+                if (!draft.CheckInDate.HasValue || !draft.CheckOutDate.HasValue) missingFields.Add(isForeign ? "Check-in & Check-out Dates" : "Ngày nhận phòng & Ngày trả phòng");
+                if (string.IsNullOrWhiteSpace(draft.GuestName)) missingFields.Add(isForeign ? "Guest Full Name" : "Họ và tên người nhận phòng");
+                if (string.IsNullOrWhiteSpace(draft.Phone)) missingFields.Add(isForeign ? "Contact Phone Number (with country code)" : "Số điện thoại liên hệ");
+                if (string.IsNullOrWhiteSpace(draft.Email)) missingFields.Add(isForeign ? "Email address (for booking confirmation & receipt)" : "Email nhận thông báo & hóa đơn xác nhận");
+                if (string.IsNullOrWhiteSpace(draft.PaymentMethod)) missingFields.Add(isForeign ? "Payment Method (Cash upon arrival / Credit card / Bank transfer)" : "Hình thức thanh toán dự kiến (Tiền mặt tại quầy / Chuyển khoản VietQR / MoMo)");
 
                 if (missingFields.Count == 0)
                 {
@@ -991,6 +1149,19 @@ namespace QuanLyKhachSan.Services.AI
 
                     decimal totalAmount = nights * pricePerNight;
 
+                    if (isForeign)
+                    {
+                        return $"I have recorded your complete reservation details as follows:\n\n" +
+                               $"🏨 **Room Type:** {draft.RoomTypeName}\n" +
+                               $"📅 **Stay Duration:** {draft.CheckInDate:dd/MM/yyyy} to {draft.CheckOutDate:dd/MM/yyyy} (**{nights} night{(nights > 1 ? "s" : "")}**)\n" +
+                               $"👥 **Guests:** {draft.NumGuests} guest{(draft.NumGuests > 1 ? "s" : "")}\n" +
+                               $"👤 **Guest Name:** {draft.GuestName} ({draft.Phone})\n" +
+                               $"📧 **Email:** {draft.Email}\n" +
+                               $"💳 **Payment Method:** {draft.PaymentMethod}\n" +
+                               $"💰 **Total Amount:** **{totalAmount:N0} VND (~${Math.Round(totalAmount / 25000, 1)} USD)** ({pricePerNight:N0} VND/night)\n\n" +
+                               $"👉 Simply reply **\"Confirm booking\"** or click **\"Confirm Booking Now\"** below, and I will reserve your room and issue your confirmation code immediately!";
+                    }
+
                     return $"Dạ em đã ghi nhận đầy đủ thông tin đặt phòng của Quý khách như sau:\n\n" +
                            $"🏨 **Hạng phòng:** {draft.RoomTypeName}\n" +
                            $"📅 **Thời gian:** {draft.CheckInDate:dd/MM/yyyy} ➔ {draft.CheckOutDate:dd/MM/yyyy} (**{nights} đêm**)\n" +
@@ -1005,6 +1176,26 @@ namespace QuanLyKhachSan.Services.AI
                 {
                     // Còn thiếu thông tin -> Tiếp tục phỏng vấn
                     var sb = new StringBuilder();
+                    if (isForeign)
+                    {
+                        sb.AppendLine("I am delighted to assist you with booking your room directly here! ✨\n");
+                        sb.AppendLine("So far, I have noted:");
+                        if (draft.RoomTypeId.HasValue) sb.AppendLine($"• Room Type: **{draft.RoomTypeName}**");
+                        if (draft.CheckInDate.HasValue && draft.CheckOutDate.HasValue) sb.AppendLine($"• Dates: **{draft.CheckInDate:dd/MM/yyyy} - {draft.CheckOutDate:dd/MM/yyyy}**");
+                        if (!string.IsNullOrWhiteSpace(draft.GuestName)) sb.AppendLine($"• Guest: **{draft.GuestName}**");
+                        if (!string.IsNullOrWhiteSpace(draft.Phone)) sb.AppendLine($"• Phone: **{draft.Phone}**");
+                        if (!string.IsNullOrWhiteSpace(draft.Email)) sb.AppendLine($"• Email: **{draft.Email}**");
+                        if (!string.IsNullOrWhiteSpace(draft.PaymentMethod)) sb.AppendLine($"• Payment: **{draft.PaymentMethod}**");
+
+                        sb.AppendLine("\nTo finalize your reservation, could you please provide:");
+                        for (int i = 0; i < missingFields.Count; i++)
+                        {
+                            sb.AppendLine($"{i + 1}. **{missingFields[i]}**");
+                        }
+                        sb.AppendLine("\n*(You can reply naturally, for example: \"My name is John Doe, phone +1-555-0199, email john@example.com, pay cash on arrival\")*");
+                        return sb.ToString();
+                    }
+
                     sb.AppendLine("Dạ em rất sẵn lòng hỗ trợ Quý khách đặt phòng trực tiếp ngay tại đây ạ! ✨");
                     sb.AppendLine();
                     sb.AppendLine("Hiện tại em đã ghi nhận được:");
@@ -1029,8 +1220,19 @@ namespace QuanLyKhachSan.Services.AI
             }
 
             // 4. Chào hỏi thông thường
-            if (lower.Contains("chào") || lower.Contains("hello") || lower.Contains("hi") || lower.Contains("alo") || lower.Contains("ơi") || lower == "start")
+            if (lower.Contains("chào") || lower.Contains("hello") || lower.Contains("hi") || lower.Contains("hey") || lower.Contains("good morning") || lower.Contains("good evening") || lower.Contains("alo") || lower.Contains("ơi") || lower == "start")
             {
+                if (isForeign)
+                {
+                    return "Warm greetings from **Sun Hotel** 4-star! ✨ I am your AI Virtual Concierge.\n\n" +
+                           "I am here to assist you 24/7 with:\n" +
+                           "• 🛎️ **Direct Room Reservation** right here in this chat (instant confirmation)\n" +
+                           "• 🏨 **Live Room Availability & Rates** in VND & USD\n" +
+                           "• 🔍 **Booking Lookup** (just send your `BK-...` booking code)\n" +
+                           "• 🏖️ **Hotel Amenities & Services:** Daily breakfast buffet, rooftop infinity pool, airport transfer...\n\n" +
+                           "Which room type are you interested in, or what dates are you planning to stay with us?";
+                }
+
                 return "Dạ em chào Quý khách! Em là Tiếp tân ảo AI của khách sạn 4 sao **Sun Hotel** ✨\n\n" +
                        "Em có thể trực tiếp hỗ trợ Quý khách:\n" +
                        "• 🛎️ **Đặt phòng hộ Quý khách** ngay tại khung chat này (chỉ cần gửi thông tin phòng và ngày đến)\n" +
@@ -1041,8 +1243,16 @@ namespace QuanLyKhachSan.Services.AI
             }
 
             // 5. Quy định giờ nhận / trả phòng
-            if (lower.Contains("giờ") || lower.Contains("nhận phòng") || lower.Contains("trả phòng") || lower.Contains("check in") || lower.Contains("checkin") || lower.Contains("checkout") || lower.Contains("check out"))
+            if (lower.Contains("giờ") || lower.Contains("nhận phòng") || lower.Contains("trả phòng") || lower.Contains("check in") || lower.Contains("checkin") || lower.Contains("checkout") || lower.Contains("check out") || lower.Contains("time"))
             {
+                if (isForeign)
+                {
+                    return "At **Sun Hotel**, our standard check-in and check-out schedule is:\n\n" +
+                           "• 🕒 **Check-in time:** from **14:00 (2:00 PM)**\n" +
+                           "• 🕛 **Check-out time:** before **12:00 (12:00 PM)**\n\n" +
+                           "Early check-in or late check-out can be arranged subject to real-time room availability. Please let us know in advance if you require special arrangements!";
+                }
+
                 return "Dạ theo quy định tại **Sun Hotel**:\n\n" +
                        "• 🕒 **Giờ nhận phòng (Check-in):** từ **14:00**\n" +
                        "• 🕛 **Giờ trả phòng (Check-out):** trước **12:00**\n\n" +
@@ -1050,8 +1260,19 @@ namespace QuanLyKhachSan.Services.AI
             }
 
             // 6. Tiện ích và dịch vụ
-            if (lower.Contains("ăn sáng") || lower.Contains("buffet") || lower.Contains("hồ bơi") || lower.Contains("bể bơi") || lower.Contains("spa") || lower.Contains("wifi") || lower.Contains("tiện ích") || lower.Contains("dịch vụ") || lower.Contains("ăn uống"))
+            if (lower.Contains("ăn sáng") || lower.Contains("buffet") || lower.Contains("hồ bơi") || lower.Contains("bể bơi") || lower.Contains("spa") || lower.Contains("wifi") || lower.Contains("tiện ích") || lower.Contains("dịch vụ") || lower.Contains("ăn uống") ||
+                lower.Contains("breakfast") || lower.Contains("pool") || lower.Contains("amenities") || lower.Contains("facility") || lower.Contains("facilities") || lower.Contains("shuttle") || lower.Contains("airport"))
             {
+                if (isForeign)
+                {
+                    return "**Sun Hotel** offers standard 4-star hospitality amenities for your comfort:\n\n" +
+                           "• 🍽️ **Daily Breakfast Buffet:** Served 06:30 - 09:30 AM at our 2nd floor restaurant (included with stay).\n" +
+                           "• 🏊 **Rooftop Infinity Pool:** Located on the top floor with stunning panoramic ocean views.\n" +
+                           "• 📶 **High-Speed Wi-Fi:** Complimentary throughout all guest rooms and public areas.\n" +
+                           "• 🚗 **Airport Shuttle Service:** 24/7 private transfer service available upon request.\n\n" +
+                           "Would you like me to check room availability for your travel dates?";
+                }
+
                 return "Dạ **Sun Hotel** cung cấp các tiện ích và dịch vụ 4 sao tiêu chuẩn dành cho Quý khách:\n\n" +
                        "• 🍽️ **Buffet sáng:** Phục vụ hàng ngày từ 06:30 - 09:30 tại nhà hàng tầng 2 (đã bao gồm trong giá phòng).\n" +
                        "• 🏊 **Hồ bơi vô cực:** Tọa lạc tại tầng thượng với tầm nhìn hướng biển tuyệt đẹp.\n" +
@@ -1061,8 +1282,18 @@ namespace QuanLyKhachSan.Services.AI
             }
 
             // 7. Địa chỉ, vị trí và liên hệ
-            if (lower.Contains("địa chỉ") || lower.Contains("ở đâu") || lower.Contains("vị trí") || lower.Contains("liên hệ") || lower.Contains("hotline") || lower.Contains("sđt") || lower.Contains("số điện thoại"))
+            if (lower.Contains("địa chỉ") || lower.Contains("ở đâu") || lower.Contains("vị trí") || lower.Contains("liên hệ") || lower.Contains("hotline") || lower.Contains("sđt") || lower.Contains("số điện thoại") ||
+                lower.Contains("address") || lower.Contains("where") || lower.Contains("location") || lower.Contains("contact") || lower.Contains("phone"))
             {
+                if (isForeign)
+                {
+                    return "Here is the contact and location information for **Sun Hotel**:\n\n" +
+                           "• 📍 **Address:** 123 Coastal Road, Son Tra District, Da Nang City, Vietnam\n" +
+                           "• 📞 **Hotline:** +84 1900 6868 (24/7 service)\n" +
+                           "• 📧 **Email:** contact@sunhotel.vn\n\n" +
+                           "The hotel is ideally located just a 3-minute walk from My Khe Beach and a 15-minute drive from Da Nang International Airport!";
+                }
+
                 return "Dạ thông tin liên hệ của **Sun Hotel**:\n\n" +
                        "• 📍 **Địa chỉ:** 123 Đường Ven Biển, Quận Sơn Trà, TP. Đà Nẵng\n" +
                        "• 📞 **Hotline:** 1900 6868 (Phục vụ 24/7)\n" +
@@ -1079,6 +1310,36 @@ namespace QuanLyKhachSan.Services.AI
                 var roomTypes = (IEnumerable<dynamic>)data.RoomTypes;
 
                 var sb = new StringBuilder();
+                if (isForeign)
+                {
+                    sb.AppendLine("Here is the current live room availability at **Sun Hotel**:\n");
+                    sb.AppendLine($"🏨 **Overall Status:** We currently have **{totalAvailable} available rooms** (out of {totalRooms} total rooms) ready for guests.\n");
+                    sb.AppendLine("Room types & rates:");
+
+                    foreach (var rt in roomTypes)
+                    {
+                        int avail = rt.AvailableCount;
+                        decimal price = rt.BasePrice;
+                        int maxGuests = rt.MaxGuests;
+                        string typeName = rt.RoomTypeName;
+                        var roomNums = (List<string>)rt.AvailableRoomNumbers;
+
+                        string statusText = avail > 0 
+                            ? $"**{avail} rooms available**" 
+                            : "🔴 *Fully booked*";
+
+                        string roomListText = (avail > 0 && roomNums.Count > 0)
+                            ? $" (Rooms: {string.Join(", ", roomNums.Select(n => "R." + n))})"
+                            : string.Empty;
+
+                        sb.AppendLine($"- **{typeName}**: {statusText}{roomListText}");
+                        sb.AppendLine($"  • Rate: **{price:N0} VND (~${Math.Round(price / 25000, 1)} USD) / night** | Max: {maxGuests} guests");
+                    }
+
+                    sb.AppendLine("\n👉 Simply tell me which room type and dates you would like, and I will book it for you directly right here!");
+                    return sb.ToString();
+                }
+
                 sb.AppendLine("Dạ em xin gửi tới Quý khách thông tin tình trạng phòng trống hiện tại của **Sun Hotel**:");
                 sb.AppendLine();
                 sb.AppendLine($"🏨 **Tình trạng tổng thể:** Hiện có **{totalAvailable} phòng trống** (trên tổng số {totalRooms} phòng) sẵn sàng đón tiếp Quý khách.");
@@ -1110,12 +1371,15 @@ namespace QuanLyKhachSan.Services.AI
                 return sb.ToString();
             }
 
-            return "Dạ em chào Quý khách! Em là Tiếp tân AI của Sun Hotel 4 sao. Em luôn sẵn sàng hỗ trợ Quý khách kiểm tra phòng trống, thu thập thông tin và đặt phòng trực tiếp ạ!";
+            return isForeign
+                ? "Welcome to Sun Hotel! ✨ I am your AI Virtual Concierge. I am always ready to help you check availability, explore amenities, and book a room directly right here!"
+                : "Dạ em chào Quý khách! Em là Tiếp tân AI của Sun Hotel 4 sao. Em luôn sẵn sàng hỗ trợ Quý khách kiểm tra phòng trống, thu thập thông tin và đặt phòng trực tiếp ạ!";
         }
 
         private void GenerateQuickActions(string userMsg, AiChatSession session, AiFunctionCallResult? roomResult, List<AiQuickAction> quickActions, UserRole role)
         {
             var draft = session.BookingDraft;
+            bool isForeign = IsEnglishOrForeign(userMsg, session.Messages);
 
             // Nếu là Admin hoặc Manager: Đưa ra các lối tắt điều hành & thống kê báo cáo
             if (role is UserRole.Admin or UserRole.Manager)
@@ -1151,6 +1415,26 @@ namespace QuanLyKhachSan.Services.AI
             // Nếu vừa tạo xong đơn đặt phòng
             if (!string.IsNullOrWhiteSpace(draft.LastCreatedBookingCode))
             {
+                if (isForeign)
+                {
+                    quickActions.Add(new AiQuickAction
+                    {
+                        Label = "💳 Pay Online Now",
+                        Action = $"/Payment?code={draft.LastCreatedBookingCode}"
+                    });
+                    quickActions.Add(new AiQuickAction
+                    {
+                        Label = "📄 View Reservation",
+                        Action = $"/Booking/Confirmation?code={draft.LastCreatedBookingCode}"
+                    });
+                    quickActions.Add(new AiQuickAction
+                    {
+                        Label = "🏨 Book Another Room",
+                        Action = "I would like to book another room"
+                    });
+                    return;
+                }
+
                 quickActions.Add(new AiQuickAction
                 {
                     Label = "💳 Thanh toán ngay (QR / MoMo)",
@@ -1172,6 +1456,21 @@ namespace QuanLyKhachSan.Services.AI
             // Nếu đã có đủ thông tin và chờ khách bấm xác nhận
             if (draft.HasMinimumInfo)
             {
+                if (isForeign)
+                {
+                    quickActions.Add(new AiQuickAction
+                    {
+                        Label = "✅ Confirm Booking Now",
+                        Action = "Confirm booking"
+                    });
+                    quickActions.Add(new AiQuickAction
+                    {
+                        Label = "✏️ Change Information",
+                        Action = "I would like to change my booking details"
+                    });
+                    return;
+                }
+
                 quickActions.Add(new AiQuickAction
                 {
                     Label = "✅ Xác nhận đặt phòng ngay",
@@ -1194,16 +1493,21 @@ namespace QuanLyKhachSan.Services.AI
                 {
                     if (rt.AvailableCount > 0)
                     {
+                        string rtName = (string)rt.RoomTypeName;
                         quickActions.Add(new AiQuickAction
                         {
-                            Label = $"🛎️ Đặt {rt.RoomTypeName}",
-                            Action = $"Tôi muốn đặt phòng {rt.RoomTypeName}"
+                            Label = isForeign ? $"🛎️ Book {rtName}" : $"🛎️ Đặt {rtName}",
+                            Action = isForeign ? $"I want to book a {rtName} room" : $"Tôi muốn đặt phòng {rtName}"
                         });
                     }
                 }
             }
 
-            quickActions.Add(new AiQuickAction { Label = "📋 Xem hình ảnh phòng", Action = "/Room/Listing" });
+            quickActions.Add(new AiQuickAction 
+            { 
+                Label = isForeign ? "📋 View Room Photos" : "📋 Xem hình ảnh phòng", 
+                Action = "/Room/Listing" 
+            });
         }
         
         public AiChatSession? GetSession(string sessionId)

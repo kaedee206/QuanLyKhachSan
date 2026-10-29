@@ -45,6 +45,13 @@ services:
       Email__User: "${EMAIL_USER}"
       Email__Password: "${EMAIL_PASSWORD}"
       Email__From: "${EMAIL_FROM}"
+      AI_API_BASE_URL: "${AI_API_BASE_URL:-https://generativelanguage.googleapis.com}"
+      AI_API_KEY: "${AI_API_KEY}"
+      AI_MODEL_NAME: "${AI_MODEL_NAME:-gemini-2.5-flash}"
+      AI_TEMPERATURE: "${AI_TEMPERATURE:-0.2}"
+      AI_MAX_TOKENS: "${AI_MAX_TOKENS:-1500}"
+    env_file:
+      - .env
     volumes:
       - app_logs:/app/logs
       - app_keys:/app/keys

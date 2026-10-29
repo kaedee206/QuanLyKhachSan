@@ -5,6 +5,8 @@
 (function() {
     'use strict';
 
+    const isForeignGuest = !((navigator.language || navigator.userLanguage || '').toLowerCase().startsWith('vi'));
+
     const CONFIG = {
         apiEndpoint: '/api/ai/chat',
         streamEndpoint: '/api/ai/chat/stream',
@@ -13,8 +15,10 @@
             accent: '#d4af37'
         },
         storageKey: 'hotelAiChatSession',
-        welcomeMessage: 'Chào bạn, tôi có thể giúp gì cho bạn hôm nay?',
-        botName: 'Trợ lý Khách sạn'
+        welcomeMessage: isForeignGuest
+            ? 'Hello! I am Sun Hotel\'s Virtual Concierge. How may I assist you today? Feel free to ask in English or any language.'
+            : 'Chào bạn, tôi là trợ lý ảo của Sun Hotel. Tôi có thể giúp gì cho bạn hôm nay?',
+        botName: isForeignGuest ? 'Hotel Concierge AI' : 'Trợ lý Khách sạn'
     };
 
     let sessionData = {
@@ -186,11 +190,17 @@
     function renderHistory() {
         elements.messagesContainer.innerHTML = '';
         if (sessionData.history.length === 0) {
-            addMessage('assistant', CONFIG.welcomeMessage, [
+            const initialActions = isForeignGuest ? [
+                { label: '🔍 Check room availability', value: 'Check room availability' },
+                { label: '📋 Room types & prices', value: 'What room types and prices do you have?' },
+                { label: '🛎️ Book a room', value: 'I would like to book a room' }
+            ] : [
                 { label: '🔍 Còn bao nhiêu phòng trống?', value: 'Còn bao nhiêu phòng trống?' },
                 { label: '📋 Xem danh sách phòng', value: '/Room/Listing' },
                 { label: '🏷️ Bảng giá các loại phòng', value: 'Bảng giá các loại phòng hiện tại' }
-            ]);
+            ];
+
+            addMessage('assistant', CONFIG.welcomeMessage, initialActions);
         } else {
             sessionData.history.forEach(msg => {
                 elements.messagesContainer.appendChild(buildMessageElement(msg));
@@ -344,7 +354,11 @@
     }
 
     function startNewConversation() {
-        if (confirm('Bạn có chắc chắn muốn xóa lịch sử và bắt đầu cuộc trò chuyện mới?')) {
+        const confirmMsg = isForeignGuest
+            ? 'Are you sure you want to clear chat history and start a new conversation?'
+            : 'Bạn có chắc chắn muốn xóa lịch sử và bắt đầu cuộc trò chuyện mới?';
+
+        if (confirm(confirmMsg)) {
             sessionData.history = [];
             sessionData.sessionId = generateUUID();
             saveSession();
@@ -384,6 +398,24 @@
         };
 
         if (!elements.fab) return; // Not present on page
+
+        if (isForeignGuest && (!window.aiChatUserRole || window.aiChatUserRole === 'guest' || window.aiChatUserRole === 'customer')) {
+            if (elements.input) {
+                elements.input.placeholder = 'Ask about rooms, booking, amenities in English...';
+            }
+            if (elements.fab) {
+                elements.fab.title = 'Chat with AI Concierge';
+            }
+            if (elements.newConvBtn) {
+                elements.newConvBtn.title = 'New conversation';
+            }
+            if (elements.minimizeBtn) {
+                elements.minimizeBtn.title = 'Minimize';
+            }
+            if (elements.closeBtn) {
+                elements.closeBtn.title = 'Close';
+            }
+        }
 
         initSession();
         renderHistory();
